@@ -21,7 +21,7 @@
     #game-container {
         position: relative; width: 100vw; height: 100vh;
         display: flex; justify-content: center; align-items: center;
-        transition: transform 0.1s; /* 震動特效 */
+        transition: transform 0.1s; 
         overflow: hidden;
     }
     canvas { 
@@ -91,7 +91,7 @@
     }
     .choice-btn:hover { background: rgba(79, 172, 254, 0.5); transform: translateX(5px); }
 
-    /* 螢幕遮罩 */
+    /* 螢幕遮罩 (開始/結局) */
     .overlay-screen {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         display: none; flex-direction: column; justify-content: center; align-items: center;
@@ -106,6 +106,7 @@
     }
     .btn-action:active { transform: scale(0.95); }
 
+    /* 💥 震動特效 */
     .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
     @keyframes shake { 10%, 90% { transform: translate3d(-3px, 0, 0); } 20%, 80% { transform: translate3d(5px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
 </style>
@@ -115,7 +116,7 @@
 <div id="game-container">
     <canvas id="gameCanvas" width="800" height="500"></canvas>
 
-    <!-- 🛡️ 玩家資訊 (修復血量數字缺失) -->
+    <!-- 🛡️ 玩家資訊 -->
     <div id="hud-player" class="hud-panel">
         <div id="player-avatar">🧚‍♀️</div>
         <div id="player-info">
@@ -535,7 +536,6 @@
         finalPathAction = action; 
         isMoving = true;
         
-        // 🚨 修正2：如果已經在目標旁邊 (路徑長度為 0)，就不要卡在移動狀態，直接觸發對話！
         if (pathQueue.length === 0) {
             isMoving = false;
             if (finalPathAction) finalPathAction();
@@ -598,12 +598,16 @@
         }
     });
 
-    // 點擊地圖互動
-    document.getElementById('canvas-wrapper').addEventListener('pointerdown', (e) => {
-        e.preventDefault(); if (!isGameStarted || isDialogActive || isGameOver) return; 
+    // 🌟 絕對修復：直接綁定在 canvas 本身 🌟
+    canvas.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); 
+        if (!isGameStarted || isDialogActive || isGameOver) return; 
         
-        const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
-        const targetGridX = Math.floor(((e.clientX - rect.left) * scaleX) / TILE_SIZE); const targetGridY = Math.floor(((e.clientY - rect.top) * scaleY) / TILE_SIZE);
+        const rect = canvas.getBoundingClientRect(); 
+        const scaleX = canvas.width / rect.width; 
+        const scaleY = canvas.height / rect.height;
+        const targetGridX = Math.floor(((e.clientX - rect.left) * scaleX) / TILE_SIZE); 
+        const targetGridY = Math.floor(((e.clientY - rect.top) * scaleY) / TILE_SIZE);
         const scene = scenes[currentScene];
 
         let clickedNPC = scene.npcs.find(n => n.gridX === targetGridX && n.gridY === targetGridY);
