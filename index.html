@@ -30,7 +30,7 @@
         box-shadow: 0 0 50px rgba(0,0,0,0.8);
     }
 
-    /* ================= 🛡️ HUD 介面 (Head-Up Display) ================= */
+    /* ================= 🛡️ HUD 介面 ================= */
     .hud-panel {
         position: absolute; background: var(--hud-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
         border: 1px solid var(--hud-border); border-radius: 12px; color: #fff; pointer-events: none;
@@ -46,8 +46,8 @@
         border-radius: 50%; width: 55px; height: 55px; display: flex; justify-content: center; align-items: center;
         box-shadow: 0 0 10px var(--primary); margin-right: 15px;
     }
-    #player-info { display: flex; flex-direction: column; width: 150px;}
-    #player-name { font-size: 16px; font-weight: 900; color: var(--primary); margin-bottom: 5px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);}
+    #player-info { display: flex; flex-direction: column; width: 170px;}
+    #player-name { font-size: 15px; font-weight: 900; color: var(--primary); text-shadow: 0 2px 4px rgba(0,0,0,0.8);}
     #hp-bar-bg { width: 100%; height: 12px; background: rgba(0,0,0,0.6); border-radius: 6px; overflow: hidden; border: 1px solid #333;}
     #hp-bar { height: 100%; width: 100%; background: var(--success); transition: width 0.3s, background 0.3s; box-shadow: inset 0 0 5px rgba(255,255,255,0.5);}
 
@@ -91,7 +91,7 @@
     }
     .choice-btn:hover { background: rgba(79, 172, 254, 0.5); transform: translateX(5px); }
 
-    /* 螢幕遮罩 (開始/結局) */
+    /* 螢幕遮罩 */
     .overlay-screen {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         display: none; flex-direction: column; justify-content: center; align-items: center;
@@ -106,7 +106,6 @@
     }
     .btn-action:active { transform: scale(0.95); }
 
-    /* 💥 震動特效 */
     .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
     @keyframes shake { 10%, 90% { transform: translate3d(-3px, 0, 0); } 20%, 80% { transform: translate3d(5px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
 </style>
@@ -116,11 +115,14 @@
 <div id="game-container">
     <canvas id="gameCanvas" width="800" height="500"></canvas>
 
-    <!-- 🛡️ 玩家資訊 -->
+    <!-- 🛡️ 玩家資訊 (修復血量數字缺失) -->
     <div id="hud-player" class="hud-panel">
         <div id="player-avatar">🧚‍♀️</div>
         <div id="player-info">
-            <div id="player-name">Lv.99 傳說隊輔</div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6px;">
+                <div id="player-name">Lv.99 傳說隊輔</div>
+                <div id="mood-text" style="font-size: 13px; font-weight: bold; color: #a4b0be;">15/15</div>
+            </div>
             <div id="hp-bar-bg"><div id="hp-bar"></div></div>
         </div>
     </div>
@@ -132,7 +134,7 @@
         <div id="timer-display">⏱️ 80 秒</div>
     </div>
 
-    <!-- 🛡️ 系統頻道 (💡已修復雙重ID) -->
+    <!-- 🛡️ 系統頻道 -->
     <div id="hud-chat" class="hud-panel">
         <div class="chat-msg system">歡迎來到營隊生存模擬器。</div>
     </div>
@@ -169,7 +171,7 @@
 
 <script>
     // ==========================================
-    // ⚙️ 核心設定 (寬螢幕 MMO 版)
+    // ⚙️ 核心設定 
     // ==========================================
     const GAME_TIME_SECONDS = 80; 
     let remainingTime = GAME_TIME_SECONDS;
@@ -184,7 +186,6 @@
     const gameContainer = document.getElementById('game-container');
     const systemChat = document.getElementById('hud-chat');
 
-    // 寬螢幕網格設定 (16x10)
     const TILE_SIZE = 50;
     const COLS = 16; 
     const ROWS = 10;
@@ -402,8 +403,11 @@
     function updateMoodUI() {
         const bar = document.getElementById('hp-bar');
         const text = document.getElementById('mood-text');
+        
         let percentage = Math.max(0, (currentMood / MAX_MOOD) * 100);
-        bar.style.width = percentage + '%'; text.innerText = `${currentMood}/${MAX_MOOD}`;
+        bar.style.width = percentage + '%'; 
+        text.innerText = `${currentMood}/${MAX_MOOD}`;
+        
         if (currentMood > (MAX_MOOD/2)) bar.style.background = 'var(--success)'; 
         else if (currentMood > (MAX_MOOD/4)) bar.style.background = 'var(--warning)'; 
         else bar.style.background = 'var(--danger)'; 
@@ -411,7 +415,8 @@
 
     function changeMood(amount, sourceX = player.pixelX, sourceY = player.pixelY) {
         if (amount === 0) return;
-        currentMood = Math.min(MAX_MOOD, currentMood + amount); updateMoodUI();
+        currentMood = Math.min(MAX_MOOD, currentMood + amount);
+        updateMoodUI();
         
         let color = amount > 0 ? '#2ed573' : '#ff4757';
         let text = amount > 0 ? `+${amount}` : `${amount}`;
@@ -526,7 +531,15 @@
     let finalPathAction = null;
 
     function startWalk(path, action) {
-        pathQueue = path; finalPathAction = action; isMoving = true;
+        pathQueue = path; 
+        finalPathAction = action; 
+        isMoving = true;
+        
+        // 🚨 修正2：如果已經在目標旁邊 (路徑長度為 0)，就不要卡在移動狀態，直接觸發對話！
+        if (pathQueue.length === 0) {
+            isMoving = false;
+            if (finalPathAction) finalPathAction();
+        }
     }
 
     // --- 對話系統 ---
@@ -585,8 +598,8 @@
         }
     });
 
-    // 💡 修正的點擊事件 (舊的 canvas-wrapper 被拔掉了，改綁定在 canvas 本身)
-    canvas.addEventListener('pointerdown', (e) => {
+    // 點擊地圖互動
+    document.getElementById('canvas-wrapper').addEventListener('pointerdown', (e) => {
         e.preventDefault(); if (!isGameStarted || isDialogActive || isGameOver) return; 
         
         const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
@@ -656,22 +669,31 @@
 
     function drawNameLabel(title, name, px, py, isPlayer = false) {
         ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.font = 'bold 11px sans-serif'; ctx.fillStyle = isPlayer ? '#feca57' : '#a4b0be'; ctx.fillText(`[${title}]`, px, py - 18);
-        ctx.font = '900 14px "微軟正黑體", sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.strokeText(name, px, py - 3);
+        
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillStyle = isPlayer ? '#feca57' : '#a4b0be';
+        ctx.fillText(`[${title}]`, px, py - 18);
+
+        ctx.font = '900 14px "微軟正黑體", sans-serif'; 
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.strokeText(name, px, py - 3);
         ctx.fillStyle = isPlayer ? '#1dd1a1' : '#ffffff'; ctx.fillText(name, px, py - 3);
     }
 
     function drawGraphic(icon, px, py, sizeClass = 32) {
         ctx.fillStyle = '#000000'; ctx.font = `${sizeClass}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(icon, px, py + 2);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(icon, px, py + 2);
     }
 
     function gameLoop(timestamp) {
         const scene = scenes[currentScene];
         
         if (isMoving && pathQueue.length > 0) {
-            let targetX = pathQueue[0].x * TILE_SIZE; let targetY = pathQueue[0].y * TILE_SIZE;
-            player.pixelX = lerp(player.pixelX, targetX, 0.25); player.pixelY = lerp(player.pixelY, targetY, 0.25);
+            let targetX = pathQueue[0].x * TILE_SIZE;
+            let targetY = pathQueue[0].y * TILE_SIZE;
+            
+            player.pixelX = lerp(player.pixelX, targetX, 0.25);
+            player.pixelY = lerp(player.pixelY, targetY, 0.25);
             player.facing = pathQueue[0].dir;
 
             if (Math.abs(player.pixelX - targetX) < 1 && Math.abs(player.pixelY - targetY) < 1) {
@@ -744,20 +766,29 @@
         ctx.fill();
 
         let gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 200, canvas.width/2, canvas.height/2, canvas.width/1.2);
-        gradient.addColorStop(0, 'rgba(0,0,0,0)'); gradient.addColorStop(1, 'rgba(0,0,0,0.7)');
-        ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, 'rgba(0,0,0,0)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0.7)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         for (let i = floatingTexts.length - 1; i >= 0; i--) {
             let ft = floatingTexts[i];
             ft.y -= 0.6; ft.life -= 0.02; 
             if (ft.life <= 0) { floatingTexts.splice(i, 1); continue; }
+            
             ctx.font = '900 22px "微軟正黑體", sans-serif'; ctx.textAlign = 'center';
-            ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 4; ctx.globalAlpha = ft.life; 
-            ctx.strokeText(ft.text, ft.x, ft.y); ctx.fillStyle = ft.color; ctx.fillText(ft.text, ft.x, ft.y);
+            ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 4;
+            ctx.globalAlpha = ft.life; 
+            ctx.strokeText(ft.text, ft.x, ft.y);
+            ctx.fillStyle = ft.color; ctx.fillText(ft.text, ft.x, ft.y);
             ctx.globalAlpha = 1.0;
         }
+
         requestAnimationFrame(gameLoop);
     }
+
+    // 初始化介面與引擎
+    updateMoodUI();
     requestAnimationFrame(gameLoop);
 </script>
 </body>
