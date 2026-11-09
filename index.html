@@ -3,107 +3,115 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title> 營隊模擬器 劇情純屬虛構 </title>
+<title>營隊生存模擬器 | 旗艦版</title>
 <style>
+    /* ================= 現代化 CSS 樣式 ================= */
+    :root {
+        --primary: #54a0ff; --danger: #ff6b6b; --success: #1dd1a1; --warning: #feca57;
+    }
     body, html { 
-        margin: 0; padding: 0; background-color: #c8d6e5; 
+        margin: 0; padding: 0; background: linear-gradient(135deg, #c8d6e5 0%, #a4b0be 100%); 
         touch-action: none; user-select: none; -webkit-user-select: none;
         height: 100vh; display: flex; flex-direction: column; 
         align-items: center; justify-content: center;
-        font-family: '微軟正黑體', 'Segoe UI', sans-serif;
+        font-family: '微軟正黑體', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     #game-container {
         width: 100%; max-width: 500px; background: #ffffff;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 20px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.2); border-radius: 24px;
         overflow: hidden; display: flex; flex-direction: column;
+        transition: transform 0.1s ease; /* 用於震動特效 */
     }
-    #header { background: #54a0ff; color: white; text-align: center; padding: 12px 0; font-size: 18px; font-weight: bold; letter-spacing: 2px;}
+    #header { 
+        background: linear-gradient(90deg, #2e86de, #54a0ff); color: white; 
+        text-align: center; padding: 15px 0; font-size: 18px; font-weight: 900; letter-spacing: 2px;
+    }
     
     #quest-bar {
-        background: #fff3cd; color: #856404; padding: 8px 20px;
+        background: #fff9e6; color: #856404; padding: 10px 20px;
         font-size: 15px; font-weight: bold; border-bottom: 2px solid #ffe8a1;
-        text-align: center; display: flex; justify-content: space-between;
+        display: flex; justify-content: space-between; align-items: center;
     }
+    #timer-display { background: #ffeaa7; padding: 4px 10px; border-radius: 12px; transition: color 0.3s; }
 
     #status-bar {
         display: flex; justify-content: space-between; align-items: center;
-        padding: 10px 20px; background: #fdfdfd; border-bottom: 2px solid #e1e6eb;
-        font-weight: bold; color: #2d3436; font-size: 15px;
+        padding: 12px 20px; background: #fafafa; border-bottom: 2px solid #eeeeee; font-weight: 900; color: #2d3436; 
     }
     #mood-bar-container {
-        flex: 1; height: 18px; background: #dfe6e9; border-radius: 9px;
-        margin: 0 15px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        flex: 1; height: 16px; background: #dfe6e9; border-radius: 20px;
+        margin: 0 15px; overflow: hidden; box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
     }
     #mood-bar {
-        height: 100%; width: 100%; background: #4cd137; transition: width 0.3s ease, background-color 0.3s ease;
+        height: 100%; width: 100%; background: var(--success); 
+        transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s ease;
     }
 
-    #canvas-wrapper { position: relative; width: 100%; aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center; background: #222; touch-action: none; }
+    #canvas-wrapper { position: relative; width: 100%; aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center; background: #111; touch-action: none; overflow: hidden;}
     canvas { width: 100%; height: 100%; image-rendering: pixelated; cursor: pointer;}
     
-    #toast {
-        position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
-        background: rgba(0,0,0,0.8); color: #4cd137; padding: 10px 20px;
-        border-radius: 20px; font-weight: bold; opacity: 0; transition: opacity 0.3s;
-        pointer-events: none; z-index: 50; white-space: nowrap;
-    }
-
+    /* 💎 毛玻璃對話框 (Glassmorphism) */
     #dialog-box {
-        position: absolute; bottom: 5%; left: 5%; width: 90%;
-        background: rgba(255, 255, 255, 0.95); color: #333;
-        border: 4px solid #54a0ff; border-radius: 12px; padding: 15px;
+        position: absolute; bottom: 4%; left: 4%; width: 92%;
+        background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        border: 2px solid rgba(255,255,255,0.5); border-radius: 16px; padding: 18px;
         display: none; font-size: 16px; line-height: 1.6; z-index: 10;
         box-sizing: border-box; pointer-events: auto; cursor: pointer;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15); transform: translateY(0); transition: 0.2s;
     }
-    #dialog-box:active { transform: scale(0.98); }
-    #dialog-name { color: #2e86de; font-weight: 900; margin-bottom: 8px; font-size: 18px; border-bottom: 2px dashed #c8d6e5; padding-bottom: 4px;}
-    #dialog-hint { font-size: 13px; color: #888; margin-top: 10px; text-align: right; font-weight: bold; animation: blink 1s infinite;}
-    @keyframes blink { 50% { opacity: 0.5; } }
+    #dialog-box:active { transform: translateY(4px) scale(0.98); }
+    #dialog-name { color: #2e86de; font-weight: 900; margin-bottom: 8px; font-size: 19px; border-bottom: 2px dashed rgba(46, 134, 222, 0.3); padding-bottom: 6px;}
+    #dialog-hint { font-size: 13px; color: #888; margin-top: 12px; text-align: right; font-weight: bold; animation: pulse 1.5s infinite;}
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.95); } }
     
     #choices-container { display: none; flex-direction: column; gap: 10px; margin-top: 15px; }
     .choice-btn {
-        background: #54a0ff; color: white; padding: 10px; border-radius: 8px;
-        text-align: center; font-weight: bold; cursor: pointer; border-bottom: 3px solid #2e86de;
+        background: linear-gradient(180deg, #54a0ff, #2e86de); color: white; padding: 12px; border-radius: 12px;
+        text-align: center; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #0984e3; transition: 0.1s;
     }
-    .choice-btn:active { transform: translateY(3px); border-bottom: 0px; margin-bottom: 3px; }
+    .choice-btn:active { transform: translateY(4px); box-shadow: 0 0px 0 #0984e3; }
 
+    /* 結局畫面 */
     .overlay-screen {
         position: absolute; top: 0; left: 0; width: 100%; height: 100%;
         color: white; display: none; flex-direction: column; justify-content: center; align-items: center;
-        z-index: 100; font-size: 22px; font-weight: bold; text-align: center; backdrop-filter: blur(2px);
+        z-index: 100; text-align: center; backdrop-filter: blur(5px); animation: fadeIn 0.5s ease forwards;
     }
-    #game-over-overlay { background: rgba(0,0,0,0.85); }
-    #happy-ending-overlay { background: rgba(255, 223, 0, 0.85); color: #d35400; text-shadow: 0 2px 4px rgba(255,255,255,0.5);}
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    #game-over-overlay { background: rgba(15, 15, 20, 0.9); }
+    #happy-ending-overlay { background: rgba(255, 240, 200, 0.95); color: #d35400; }
     
     .btn-restart {
-        margin-top: 20px; padding: 12px 24px; background: #ff6b6b; color: white; text-shadow: none;
-        border-radius: 12px; cursor: pointer; border-bottom: 4px solid #ee5253;
-        font-size: 18px; font-weight: bold; transition: 0.1s; pointer-events: auto;
+        margin-top: 25px; padding: 14px 28px; background: linear-gradient(180deg, #ff6b6b, #ee5253); color: white; text-shadow: none;
+        border-radius: 14px; cursor: pointer; box-shadow: 0 4px 0 #b33939;
+        font-size: 18px; font-weight: 900; transition: 0.1s; pointer-events: auto; letter-spacing: 1px;
     }
-    .btn-restart:active { transform: translateY(4px); border-bottom: 0px; margin-bottom: 4px; background: #ee5253; }
+    .btn-restart:active { transform: translateY(4px); box-shadow: 0 0px 0 #b33939; }
 
-    #footer-hint { padding: 15px; text-align: center; color: #576574; font-size: 14px; font-weight: bold; background: #f3f6f9; border-top: 2px solid #e1e6eb; line-height: 1.5; }
+    #footer-hint { padding: 16px; text-align: center; color: #576574; font-size: 14px; font-weight: bold; background: #f1f2f6; border-top: 1px solid #e1e6eb; line-height: 1.6; }
+
+    /* 💥 震動特效 */
+    .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+    @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(4px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-6px, 0, 0); } 40%, 60% { transform: translate3d(6px, 0, 0); } }
 </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="header">🏕️ 營隊模擬器 (劇情純屬虛構)</div>
+    <div id="header">🏕️ 營隊生存模擬器</div>
     
     <div id="quest-bar">
-        <span>📜 任務：解決狀況 <span id="quest-progress">0/7</span></span>
+        <span>📜 任務：解決危機 <span id="quest-progress">0/7</span></span>
         <span id="timer-display">⏱️ 80 秒</span>
     </div>
 
     <div id="status-bar">
-        <div>💖 心情</div>
+        <div>💖 帶營隊心情</div>
         <div id="mood-bar-container"><div id="mood-bar"></div></div>
         <div id="mood-text">15/15</div>
     </div>
     
     <div id="canvas-wrapper">
-        <div id="toast"></div>
         <div id="dialog-box">
             <div id="dialog-name"></div>
             <div id="dialog-text"></div>
@@ -111,58 +119,51 @@
             <div id="dialog-hint">▼ 點擊繼續</div>
         </div>
         
-        <div id="start-screen-overlay" class="overlay-screen" style="display: flex; background: rgba(30, 40, 50, 0.95); z-index: 200;">
-            <div style="font-size: 50px; margin-bottom: 10px;">🏕️</div>
-            <div style="font-size: 28px; margin-bottom: 15px; color: #54a0ff; font-weight: 900;">營隊生存模擬器</div>
+        <div id="start-screen-overlay" class="overlay-screen" style="display: flex; background: rgba(20, 30, 40, 0.95); z-index: 200;">
+            <div style="font-size: 60px; margin-bottom: 10px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));">🏕️</div>
+            <div style="font-size: 30px; margin-bottom: 15px; color: #7bed9f; font-weight: 900; letter-spacing: 2px;">營隊生存模擬器</div>
             
-            <div style="font-size: 15px; color: #ddd; text-align: left; padding: 0 30px; line-height: 1.8; margin-bottom: 25px;">
-                📌 <b>任務目標：</b><br>
-                在倒數計時結束前，找出並解決營隊中 <b>7位角色</b> 的突發狀況。<br><br>
-                
+            <div style="font-size: 15px; color: #dfe4ea; text-align: left; padding: 0 35px; line-height: 1.8; margin-bottom: 25px; background: rgba(255,255,255,0.05); border-radius: 12px; padding-top:15px; padding-bottom:15px; border: 1px solid rgba(255,255,255,0.1);">
+                📌 <b>任務目標：</b> 在計時結束前解決 <b>7位角色</b> 的狀況。<br><br>
                 📌 <b>生存法則：</b><br>
-                1. 點擊地板移動，<b>每走 8 步會扣 1 點心情</b>。<br>
-                2. 點擊人物對話，<b>選錯回應會大扣心情！</b><br>
-                3. 隱藏評分：<b>你的每一個選擇都會影響最終評價！</b><br><br>
-                
-                ⚠️ <b>時間到</b> 或 <b>心情歸零</b> 都會導致營隊失敗！
+                🚶 每走 8 步扣 1 點心情。<br>
+                💬 對話選錯回應會大扣心情！<br>
+                🕵️ 你的每一個選擇都會影響最終評價！<br>
             </div>
             
-            <div class="btn-restart" onclick="startGame()" style="background: #4cd137; border-bottom-color: #44bd32;">開始營隊</div>
+            <div class="btn-restart" onclick="startGame()" style="background: linear-gradient(180deg, #1dd1a1, #10ac84); box-shadow: 0 4px 0 #019066;">開始挑戰</div>
         </div>
 
         <div id="game-over-overlay" class="overlay-screen">
-            <div id="game-over-title" style="font-size: 35px; margin-bottom: 15px;">🥀 心情耗盡</div>
-            <div id="game-over-desc" style="font-size: 15px; color: #aaa;">小學員暴走、進度落後，你累癱在營隊中。</div>
+            <div id="game-over-title" style="font-size: 38px; margin-bottom: 10px; font-weight: 900; color: #ff6b6b;">🥀 心情耗盡</div>
+            <div id="game-over-desc" style="font-size: 16px; color: #c8d6e5; padding: 0 20px; line-height: 1.5;">小學員暴走、進度落後，你累癱在營隊中。</div>
             <div class="btn-restart" onclick="restartGame()">重新開始</div>
         </div>
 
         <div id="happy-ending-overlay" class="overlay-screen">
-            <div id="happy-ending-icon" style="font-size: 50px; margin-bottom: 15px;">🎉</div>
-            <div id="happy-ending-title" style="font-size: 35px; margin-bottom: 10px; font-weight: 900;">完美解決！</div>
-            <div id="happy-ending-desc" style="font-size: 15px; color: #b33939;">你成功解決了室內外的所有危機！<br>辛苦了，最強隊輔！</div>
-            <div class="btn-restart" onclick="restartGame()">再玩一次</div>
+            <div id="happy-ending-icon" style="font-size: 55px; margin-bottom: 10px;">🎉</div>
+            <div id="happy-ending-title" style="font-size: 38px; margin-bottom: 10px; font-weight: 900;">完美解決！</div>
+            <div id="happy-ending-desc" style="font-size: 16px; color: #d35400; font-weight: bold; padding: 0 20px; line-height: 1.6;">你成功解決了所有危機！</div>
+            <div class="btn-restart" onclick="restartGame()" style="background: linear-gradient(180deg, #ff9f43, #f368e0); box-shadow: 0 4px 0 #b71540;">再次挑戰</div>
         </div>
 
         <canvas id="gameCanvas" width="480" height="480"></canvas>
     </div>
 
     <div id="footer-hint">
-        👆 點地板：移動<br>
-        💬 點 NPC 或 🚪 ：自動尋路
+        👆 點地板移動 (小心走動的小孩)<br>
+        💬 點人物或 🚪 門可自動尋路過去
     </div>
 </div>
 
 <script>
     // ==========================================
-    // ⏱️ 【倒數計時系統設定區】 ⏱️
+    // ⚙️ 遊戲核心設定
     // ==========================================
     const GAME_TIME_SECONDS = 80; 
     let remainingTime = GAME_TIME_SECONDS;
     let timerInterval = null; 
 
-    // ==========================================
-    // 🕵️ 【隱藏錯誤評分系統設定區】 🕵️
-    // ==========================================
     const MAX_HIDDEN_SCORE = 7;
     let currentHiddenScore = MAX_HIDDEN_SCORE;
 
@@ -173,13 +174,14 @@
     const dialogText = document.getElementById('dialog-text');
     const dialogHint = document.getElementById('dialog-hint');
     const choicesContainer = document.getElementById('choices-container');
+    const gameContainer = document.getElementById('game-container');
 
     const TILE_SIZE = 40;
     const COLS = 12; 
     const ROWS = 12;
-    let moveTimer = null;
 
-    let player = { x: 5, y: 5, icon: '🧚‍♀️', facing: 'down' };
+    // 🌟 V2.0 新增：視覺平滑座標 (用於 requestAnimationFrame)
+    let player = { gridX: 5, gridY: 5, pixelX: 200, pixelY: 200, icon: '🧚‍♀️', facing: 'down' };
     let currentScene = 'classroom';
     
     let isGameStarted = false; 
@@ -196,6 +198,10 @@
     let currentMood = MAX_MOOD;
     let stepCount = 0; 
 
+    // 🌟 V2.0 新增：漂浮文字系統陣列
+    let floatingTexts = [];
+
+    // --- 像素材質 ---
     const textures = {};
     function initTextures() {
         const wood = document.createElement('canvas'); wood.width = TILE_SIZE; wood.height = TILE_SIZE; const wCtx = wood.getContext('2d');
@@ -213,6 +219,9 @@
     }
     initTextures();
 
+    // ==========================================
+    // 📖 劇本資料
+    // ==========================================
     const scenes = {
         classroom: {
             type: 'wood',
@@ -233,12 +242,11 @@
                     x: 2, y: 4, icon: '👦', name: '小明', canMove: true, 
                     msgs: [
                         '好無聊喔我要出去打球...', '我聽不懂啦...', '下午的大地跑跑好玩嗎？',
-                        { 
-                            question: '小明不想上課，你要怎麼回應？', 
-                            choices: [
-                                { text: '語氣堅定地告訴他先專心上課，並陪他一起聽', moodChange: 0, hiddenScore: 0, reply: '好啦...既然你願意陪我，我就專心聽。' },
-                                { text: '大聲喝斥他安靜', moodChange: -3, hiddenScore: -1, reply: '凶屁凶！(小明大哭，你身心俱疲 心情 -3)' }
-                            ] 
+                        { question: '小明不想上課，你要怎麼回應？', 
+                          choices: [
+                            { text: '語氣堅定告訴他專心上課並陪他', moodChange: 0, hiddenScore: 0, reply: '好啦...既然你願意陪我，我就專心聽。' },
+                            { text: '大聲喝斥他安靜', moodChange: -3, hiddenScore: -1, reply: '凶屁凶！(小明大哭，你身心俱疲 心情 -3)' }
+                          ] 
                         }
                     ] 
                 },
@@ -246,12 +254,11 @@
                     x: 2, y: 7, icon: '🧒', name: '小偉', canMove: false, 
                     msgs: [
                         '老師我剛剛有回答問題', '為什麼沒有給我點點貼紙',
-                        {
-                            question: '小偉覺得不公平，你要怎麼做？',
-                            choices: [
-                                { text: '馬上補給他一張貼紙', moodChange: 0, hiddenScore: 0, reply: '耶！謝謝老師！' },
-                                { text: '叫他安靜不要吵鬧', moodChange: -2, hiddenScore: -1, reply: '老師偏心！(小偉鬧脾氣 心情 -2)' }
-                            ]
+                        { question: '小偉覺得不公平，你要怎麼做？',
+                          choices: [
+                            { text: '馬上補給他一張貼紙', moodChange: 0, hiddenScore: 0, reply: '耶！謝謝老師！' },
+                            { text: '叫他安靜不要吵鬧', moodChange: -2, hiddenScore: -1, reply: '老師偏心！(小偉鬧脾氣 心情 -2)' }
+                          ]
                         }
                     ] 
                 },
@@ -259,12 +266,11 @@
                     x: 8, y: 4, icon: '👦', name: '大華', canMove: true,
                     msgs: [
                         '老師你不要管我', '幹嘛管這麼多...', '你又不是我媽！',
-                        {
-                            question: '大華正在到處亂跑，你要怎麼做？',
-                            choices: [
-                                { text: '先讓他冷靜下來，告訴他現在要遵守營隊規定', moodChange: 0, hiddenScore: 0, reply: '好吧。(大華安靜了下來，沒事發生)' },
-                                { text: '讓他原地罰站', moodChange: -4, hiddenScore: -1, reply: '我不要！(大華跑走，場面失控 心情 -4)' }
-                            ]
+                        { question: '大華正在到處亂跑，你要怎麼做？',
+                          choices: [
+                            { text: '先讓他冷靜下來，說明營隊規定', moodChange: 0, hiddenScore: 0, reply: '好吧。(大華安靜了下來)' },
+                            { text: '讓他原地罰站', moodChange: -4, hiddenScore: -1, reply: '我不要！(大華跑走，場面失控 心情 -4)' }
+                          ]
                         }
                     ] 
                 },
@@ -272,12 +278,11 @@
                     x: 8, y: 7, icon: '👧', name: '小美', canMove: false,
                     msgs: [
                         '小明好吵喔...', '老師你可以叫他出去嗎？', '我也不想上課了',
-                        {
-                            question: '小美被影響了，你要怎麼辦？',
-                            choices: [
-                                { text: '告訴他你會去提醒小明安靜下來', moodChange: 0, hiddenScore: 0, reply: '好，謝謝老師。' },
-                                { text: '跟他說再忍耐一下', moodChange: -2, hiddenScore: -1, reply: '不管啦我要回家！(受到影響 心情 -2)' }
-                            ]
+                        { question: '小美被影響了，你要怎麼辦？',
+                          choices: [
+                            { text: '告訴他你會去提醒小明', moodChange: 0, hiddenScore: 0, reply: '好，謝謝老師。' },
+                            { text: '跟他說再忍耐一下', moodChange: -2, hiddenScore: -1, reply: '不管啦我要回家！(受到影響 心情 -2)' }
+                          ]
                         }
                     ] 
                 }
@@ -290,8 +295,8 @@
                 { x: 8, y: 2, w: 2, h: 2, icon: '⛺' }, { x: 8, y: 8, w: 2, h: 2, icon: '⛺' }  
             ],
             items: [
-                { x: 2, y: 9, icon: '🧋', name: '老師送給大家的飲料', heal: 5, picked: false },
-                { x: 10, y: 6, icon: '🧋', name: '老師送給大家的飲料', heal: 5, picked: false },
+                { x: 2, y: 9, icon: '🧋', name: '慰勞的飲料', heal: 5, picked: false },
+                { x: 10, y: 6, icon: '🧋', name: '慰勞的飲料', heal: 5, picked: false },
                 { x: 8, y: 4, icon: '🍌', name: '地上的香蕉皮', heal: -2, picked: false }
             ],
             portal: { x: 5, y: 0, icon: '🚪', toScene: 'classroom', toX: 5, toY: 9 },
@@ -300,12 +305,11 @@
                     x: 5, y: 5, icon: '🧢', name: '總籌', canMove: true,
                     msgs: [
                         '大地跑跑馬上要開始了！', '為什麼還在場佈？？？',
-                        {
-                            question: '總籌正在焦慮，你要如何回應？',
-                            choices: [
-                                { text: '捲起袖子一起加快場佈', moodChange: -1, hiddenScore: 0, reply: '快點快點！(體力消耗 心情 -1)' },
-                                { text: '你不是大地跑跑組的，不知道怎麼辦', moodChange: -4, hiddenScore: -1, reply: '完啦完啦要開天窗了！(你也慌張起來了 心情 -4)' }
-                            ]              
+                        { question: '總籌正在焦慮，你要如何回應？',
+                          choices: [
+                            { text: '捲起袖子一起加快場佈', moodChange: -1, hiddenScore: 0, reply: '快點快點！(體力消耗 心情 -1)' },
+                            { text: '不知道怎麼辦', moodChange: -4, hiddenScore: -1, reply: '完啦完啦要開天窗了！(慌張 心情 -4)' }
+                          ]              
                         }
                     ] 
                 },
@@ -313,12 +317,11 @@
                     x: 5, y: 7, icon: '🕶️', name: '副籌', canMove: true,
                     msgs: [
                         '你們小隊有小孩在亂跑', '趕快去把他抓回來',
-                        {
-                            question: '你的回應是？',
-                            choices: [
-                                { text: '(立刻跑起來開始找人)', moodChange: -2, hiddenScore: 0, reply: '成功把人找回來，但你覺得累。(體力消耗 心情 -2)' },
-                                { text: '其他人會負責的', moodChange: -4, hiddenScore: -1, reply: '(小孩在學校遊蕩，被督導發現念了你們一頓 心情 -4)' }
-                            ]              
+                        { question: '你的回應是？',
+                          choices: [
+                            { text: '(立刻跑起來開始找人)', moodChange: -2, hiddenScore: 0, reply: '成功把人找回來，但你覺得累。(心情 -2)' },
+                            { text: '其他人會負責的', moodChange: -4, hiddenScore: -1, reply: '(被督導發現念了你們一頓 心情 -4)' }
+                          ]              
                         }
                     ] 
                 },
@@ -326,12 +329,11 @@
                     x: 10, y: 5, icon: '👨‍🦱', name: '邱曉昕', canMove: false, 
                     msgs: [
                         '我們督導說要請你們開始雨備方案', '你說沒有下雨？', '沒辦法，他擔心孩子們的安全。',
-                        {
-                            question: '面對突如其來的指令，你決定？',
-                            choices: [
-                                { text: '直接果斷切換雨備', moodChange: -1, hiddenScore: 0, reply: '好的，大家動起來！(避免爭論，但你覺得可惜 心情-1)' },
-                                { text: '耐心解釋真的沒下雨', moodChange: -3, hiddenScore: -1, reply: '可是督導說... (溝通無效，心累 心情 -3)' }
-                            ]
+                        { question: '面對突如其來的指令，你決定？',
+                          choices: [
+                            { text: '直接果斷切換雨備', moodChange: -1, hiddenScore: 0, reply: '好的，大家動起來！(覺得可惜 心情-1)' },
+                            { text: '耐心解釋真的沒下雨', moodChange: -3, hiddenScore: -1, reply: '可是督導說... (溝通無效，心累 心情 -3)' }
+                          ]
                         }
                     ] 
                 }
@@ -339,13 +341,18 @@
         }
     };
 
+    // 初始化 NPC
     for (let s in scenes) {
         for (let npc of scenes[s].npcs) {
-            npc.startX = npc.x;
-            npc.startY = npc.y;
+            npc.gridX = npc.x; npc.gridY = npc.y;
+            npc.pixelX = npc.x * TILE_SIZE; npc.pixelY = npc.y * TILE_SIZE;
+            npc.startX = npc.x; npc.startY = npc.y;
         }
     }
 
+    // ==========================================
+    // 🚀 遊戲系統
+    // ==========================================
     function startGame() {
         isGameStarted = true;
         document.getElementById('start-screen-overlay').style.display = 'none';
@@ -355,91 +362,60 @@
     function updateTimerUI() {
         const timerDisplay = document.getElementById('timer-display');
         timerDisplay.innerText = `⏱️ ${remainingTime} 秒`;
-        
-        if (remainingTime <= 10) {
-            timerDisplay.style.color = '#e84118';
-        } else {
-            timerDisplay.style.color = '#856404';
-        }
+        timerDisplay.style.color = remainingTime <= 10 ? '#e84118' : '#856404';
     }
 
     function startTimer() {
         if (timerInterval) clearInterval(timerInterval);
         updateTimerUI(); 
-        
         timerInterval = setInterval(() => {
             if (isGameOver || !isGameStarted) return; 
-            
-            remainingTime--;
-            updateTimerUI();
-            
-            if (remainingTime <= 0) {
-                clearInterval(timerInterval);
-                triggerGameOver("timeup");
-            }
+            remainingTime--; updateTimerUI();
+            if (remainingTime <= 0) triggerGameOver("timeup");
         }, 1000);
     }
 
-    function updateNPCs() {
-        if (!isGameStarted || isDialogActive || isGameOver) return;
-        
-        let didSomeoneMove = false;
-        const scene = scenes[currentScene];
-        
-        for (let npc of scene.npcs) {
-            if (!npc.canMove) continue;
-            if (Math.random() > 0.75) continue;
-
-            const dirs = [ {dx:0,dy:-1}, {dx:0,dy:1}, {dx:-1,dy:0}, {dx:1,dy:0} ];
-            const dir = dirs[Math.floor(Math.random() * dirs.length)];
-            const nx = npc.x + dir.dx;
-            const ny = npc.y + dir.dy;
-
-            if (Math.abs(nx - npc.startX) > 3 || Math.abs(ny - npc.startY) > 3) continue;
-
-            if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) continue;
-            if (nx === player.x && ny === player.y) continue; 
-            if (nx === scene.portal.x && ny === scene.portal.y) continue; 
-            
-            let collision = false;
-            for (let obj of scene.objects) {
-                if (nx >= obj.x && nx < obj.x + obj.w && ny >= obj.y && ny < obj.y + obj.h) collision = true;
-            }
-            for (let otherNpc of scene.npcs) {
-                if (nx === otherNpc.x && ny === otherNpc.y) collision = true;
-            }
-            
-            if (!collision) {
-                npc.x = nx;
-                npc.y = ny;
-                didSomeoneMove = true;
-            }
-        }
-        
-        if (didSomeoneMove) draw();
+    // 🌟 V2.0：漂浮文字管理器
+    function addFloatingText(x, y, text, color) {
+        floatingTexts.push({ x: x, y: y, text: text, color: color, life: 1.0 });
     }
-    setInterval(updateNPCs, 1000);
+
+    // 🌟 V2.0：震動特效管理器
+    function triggerShake() {
+        gameContainer.classList.remove('shake');
+        void gameContainer.offsetWidth; // 觸發 reflow
+        gameContainer.classList.add('shake');
+    }
 
     function updateMoodUI() {
         const bar = document.getElementById('mood-bar');
         const text = document.getElementById('mood-text');
-        let percentage = (currentMood / MAX_MOOD) * 100;
-        if (percentage < 0) percentage = 0;
+        let percentage = Math.max(0, (currentMood / MAX_MOOD) * 100);
         bar.style.width = percentage + '%'; text.innerText = `${currentMood}/${MAX_MOOD}`;
-        if (currentMood > (MAX_MOOD/2)) bar.style.background = '#4cd137'; 
-        else if (currentMood > (MAX_MOOD/4)) bar.style.background = '#fbc531'; 
-        else bar.style.background = '#e84118'; 
+        if (currentMood > (MAX_MOOD/2)) bar.style.background = 'var(--success)'; 
+        else if (currentMood > (MAX_MOOD/4)) bar.style.background = 'var(--warning)'; 
+        else bar.style.background = 'var(--danger)'; 
     }
 
-    // 💡 修復：觸發 Game Over 時強制關閉對話框，避免重置後報錯卡死
-    function triggerGameOver(reason = "mood") {
-        isGameOver = true;
-        clearInterval(timerInterval); 
+    function changeMood(amount, sourceX = player.pixelX, sourceY = player.pixelY) {
+        if (amount === 0) return;
+        currentMood = Math.min(MAX_MOOD, currentMood + amount);
+        updateMoodUI();
         
-        // 強制隱藏並重置對話框狀態
-        dialogBox.style.display = 'none';
-        isDialogActive = false;
-        currentDialogNPC = null;
+        // 彈出漂浮文字
+        let color = amount > 0 ? '#1dd1a1' : '#ff6b6b';
+        let text = amount > 0 ? `+${amount}` : `${amount}`;
+        addFloatingText(sourceX + TILE_SIZE/2, sourceY, text, color);
+
+        // 如果是大扣血，觸發震動
+        if (amount <= -3) triggerShake();
+
+        if (currentMood <= 0) triggerGameOver("mood"); 
+    }
+
+    function triggerGameOver(reason = "mood") {
+        isGameOver = true; clearInterval(timerInterval); 
+        dialogBox.style.display = 'none'; isDialogActive = false; currentDialogNPC = null;
         
         const title = document.getElementById('game-over-title');
         const desc = document.getElementById('game-over-desc');
@@ -451,64 +427,38 @@
             title.innerText = '🥀 心情耗盡';
             desc.innerText = '小學員暴走、進度落後，你累癱在營隊中。';
         }
-        
         document.getElementById('game-over-overlay').style.display = 'flex';
-    }
-
-    function changeMood(amount) {
-        currentMood = Math.min(MAX_MOOD, currentMood + amount);
-        updateMoodUI();
-        if (currentMood <= 0) { 
-            triggerGameOver("mood"); 
-        }
     }
 
     function updateQuestUI() {
         document.getElementById('quest-progress').innerText = `${talkedTo.size}/${QUEST_GOAL}`;
     }
 
-    function showToast(msg, isWarning = false) {
-        const toast = document.getElementById('toast');
-        toast.innerText = msg;
-        toast.style.color = isWarning ? '#ff6b6b' : '#4cd137';
-        toast.style.opacity = '1';
-        setTimeout(() => toast.style.opacity = '0', 2000);
-    }
-
     function restartGame() {
-        currentMood = MAX_MOOD; 
-        stepCount = 0; 
-        talkedTo.clear(); 
-        
-        currentHiddenScore = MAX_HIDDEN_SCORE; 
-        remainingTime = GAME_TIME_SECONDS; 
-        
+        currentMood = MAX_MOOD; stepCount = 0; talkedTo.clear(); currentHiddenScore = MAX_HIDDEN_SCORE; remainingTime = GAME_TIME_SECONDS; 
         document.getElementById('timer-display').style.color = '#856404';
         
-        updateQuestUI(); updateMoodUI(); 
-        currentScene = 'classroom'; player = { x: 5, y: 5, icon: '🧚‍♀️', facing: 'down' };
-        isGameOver = false; isDialogActive = false; currentDialogNPC = null;
+        updateQuestUI(); updateMoodUI(); floatingTexts = [];
+        currentScene = 'classroom'; 
+        player.gridX = 5; player.gridY = 5; player.pixelX = 5*TILE_SIZE; player.pixelY = 5*TILE_SIZE;
         
-        // 確保對話框隱藏
-        dialogBox.style.display = 'none'; 
+        isGameOver = false; isDialogActive = false; currentDialogNPC = null; dialogBox.style.display = 'none'; 
         
         for (let s in scenes) { 
             scenes[s].items?.forEach(i => i.picked = false); 
-            scenes[s].npcs?.forEach(npc => { npc.x = npc.startX; npc.y = npc.startY; });
+            scenes[s].npcs?.forEach(npc => { npc.gridX = npc.startX; npc.gridY = npc.startY; npc.pixelX = npc.startX*TILE_SIZE; npc.pixelY = npc.startY*TILE_SIZE;});
         }
         
-        document.getElementById('game-over-overlay').style.display = 'none';
-        document.getElementById('happy-ending-overlay').style.display = 'none';
-        draw();
-        
+        document.getElementById('game-over-overlay').style.display = 'none'; document.getElementById('happy-ending-overlay').style.display = 'none';
         startTimer(); 
     }
 
+    // --- 自動尋路系統 ---
     function isWalkable(x, y) {
         if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return false;
         const scene = scenes[currentScene];
         for (let obj of scene.objects) if (x >= obj.x && x < obj.x + obj.w && y >= obj.y && y < obj.y + obj.h) return false;
-        for (let npc of scene.npcs) if (x === npc.x && y === npc.y) return false;
+        for (let npc of scene.npcs) if (x === npc.gridX && y === npc.gridY) return false;
         return true;
     }
 
@@ -532,70 +482,36 @@
         return null; 
     }
 
-    function walkPath(path, finalAction) {
-        if (moveTimer) clearTimeout(moveTimer); 
-        function step() {
-            if (isGameOver || !isGameStarted) return; 
-            if (path.length === 0) {
-                if (finalAction) finalAction();
-                return;
-            }
-            let nextMove = path.shift();
-            player.x = nextMove.x; player.y = nextMove.y; player.facing = nextMove.dir;
-            draw();
-            
-            let item = scenes[currentScene].items?.find(i => i.x === player.x && i.y === player.y && !i.picked);
-            if (item) {
-                item.picked = true;
-                changeMood(item.heal);
-                showToast(`道具: ${item.icon} ${item.name}！心情 ${item.heal > 0 ? '+' : ''}${item.heal}`, item.heal < 0);
-                draw();
-            }
+    // 🌟 V2.0：路徑佇列，由繪圖迴圈處理平滑移動
+    let pathQueue = [];
+    let isMoving = false;
+    let finalPathAction = null;
 
-            stepCount++;
-            if (stepCount >= 8) { stepCount = 0; changeMood(-1); }
-            
-            if (!isGameOver) moveTimer = setTimeout(step, 150);
-        }
-        step();
+    function startWalk(path, action) {
+        pathQueue = path;
+        finalPathAction = action;
+        isMoving = true;
     }
 
-    function faceTarget(tx, ty) {
-        if (tx > player.x) player.facing = 'right'; else if (tx < player.x) player.facing = 'left';
-        else if (ty > player.y) player.facing = 'down'; else if (ty < player.y) player.facing = 'up';
-        draw();
-    }
-
+    // --- 對話系統 ---
     function renderDialog() {
         let msg = currentDialogNPC.msgs[currentDialogIndex];
-        
         if (typeof msg === 'string') {
             dialogText.innerText = msg;
-            dialogHint.style.display = 'block';
-            choicesContainer.style.display = 'none';
+            dialogHint.style.display = 'block'; choicesContainer.style.display = 'none';
             dialogHint.innerText = (currentDialogIndex < currentDialogNPC.msgs.length - 1) ? '▼ 點擊繼續' : '▼ 點擊結束';
         } else {
             dialogText.innerText = msg.question;
-            dialogHint.style.display = 'none';
-            choicesContainer.innerHTML = '';
+            dialogHint.style.display = 'none'; choicesContainer.innerHTML = '';
             msg.choices.forEach(choice => {
-                let btn = document.createElement('div');
-                btn.className = 'choice-btn';
-                btn.innerText = choice.text;
+                let btn = document.createElement('div'); btn.className = 'choice-btn'; btn.innerText = choice.text;
                 btn.onpointerdown = (e) => {
                     e.stopPropagation();
-                    
-                    changeMood(choice.moodChange);
-                    currentHiddenScore += choice.hiddenScore;
-                    
-                    // 💡 修復：如果選完瞬間 Game Over，就不要繼續跑後面的對話邏輯
+                    changeMood(choice.moodChange); currentHiddenScore += choice.hiddenScore;
                     if (isGameOver) return;
                     
                     dialogText.innerText = choice.reply;
-                    choicesContainer.style.display = 'none';
-                    dialogHint.style.display = 'block';
-                    dialogHint.innerText = '▼ 點擊結束';
-                    
+                    choicesContainer.style.display = 'none'; dialogHint.style.display = 'block'; dialogHint.innerText = '▼ 點擊結束';
                     currentDialogIndex = currentDialogNPC.msgs.length; 
                 };
                 choicesContainer.appendChild(btn);
@@ -607,130 +523,172 @@
     function startDialog(npc) {
         if (isGameOver) return; 
         
-        if (npc.moodChange !== undefined) {
-            changeMood(npc.moodChange);
-        } else {
-            changeMood(-1);
-        }
+        let cost = npc.moodChange !== undefined ? npc.moodChange : -1;
+        changeMood(cost, npc.pixelX, npc.pixelY);
         
         if (isGameOver) return;
 
         if (requiredNPCs.includes(npc.name) && !talkedTo.has(npc.name)) {
-            talkedTo.add(npc.name);
-            updateQuestUI();
+            talkedTo.add(npc.name); updateQuestUI();
         }
 
-        currentDialogNPC = npc; currentDialogIndex = 0; 
-        dialogName.innerText = npc.name;
-        dialogBox.style.display = 'block'; 
-        isDialogActive = true;
+        currentDialogNPC = npc; currentDialogIndex = 0; dialogName.innerText = npc.name;
+        dialogBox.style.display = 'block'; isDialogActive = true;
         renderDialog();
     }
 
     dialogBox.addEventListener('pointerdown', (e) => {
         e.preventDefault(); e.stopPropagation();
-        
         if (typeof currentDialogNPC.msgs[currentDialogIndex] === 'object') return;
 
         if (currentDialogNPC && currentDialogIndex < currentDialogNPC.msgs.length - 1) {
-            currentDialogIndex++;
-            renderDialog();
+            currentDialogIndex++; renderDialog();
         } else {
-            dialogBox.style.display = 'none'; 
-            isDialogActive = false; currentDialogNPC = null; draw();
+            dialogBox.style.display = 'none'; isDialogActive = false; currentDialogNPC = null; 
             
             if (talkedTo.size >= QUEST_GOAL && currentMood > 0 && remainingTime > 0) {
-                isGameOver = true;
-                clearInterval(timerInterval); 
+                isGameOver = true; clearInterval(timerInterval); 
                 
                 const heIcon = document.getElementById('happy-ending-icon');
                 const heTitle = document.getElementById('happy-ending-title');
                 const heDesc = document.getElementById('happy-ending-desc');
                 
                 if (currentHiddenScore >= (MAX_HIDDEN_SCORE / 2)) {
-                    heIcon.innerText = '🎉';
-                    heTitle.innerText = '完美結營！';
-                    heDesc.innerHTML = `你的評價分數：${currentHiddenScore}/${MAX_HIDDEN_SCORE}<br><br>你成功解決了所有危機，而且處事非常成熟！<br>大家都覺得你是一位超級優秀的隊輔！`;
+                    heIcon.innerText = '🎉'; heTitle.innerText = '完美結營！'; heTitle.style.color = '#d35400';
+                    heDesc.innerHTML = `隱藏評價分數：${currentHiddenScore}/${MAX_HIDDEN_SCORE}<br><br>你成功解決了所有危機，而且處事非常成熟！<br>大家都覺得你是一位超級優秀的隊輔！`;
                     heDesc.style.color = '#b33939';
                 } else {
-                    heIcon.innerText = '😅';
-                    heTitle.innerText = '勉強結營...';
-                    heDesc.innerHTML = `你的評價分數：${currentHiddenScore}/${MAX_HIDDEN_SCORE}<br><br>雖然你撐過了營隊，但處理危機的方式讓不少學員跟夥伴在背後抱怨。<br>下次再多點耐心吧！`;
+                    heIcon.innerText = '😅'; heTitle.innerText = '勉強結營...'; heTitle.style.color = '#555';
+                    heDesc.innerHTML = `隱藏評價分數：${currentHiddenScore}/${MAX_HIDDEN_SCORE}<br><br>雖然你撐過了營隊，但處理危機的方式太過急躁。<br>下次再多點耐心吧！`;
                     heDesc.style.color = '#555';
                 }
-                
                 document.getElementById('happy-ending-overlay').style.display = 'flex';
             }
         }
     });
 
     canvas.addEventListener('pointerdown', (e) => {
-        e.preventDefault(); 
-        if (!isGameStarted || isDialogActive || isGameOver) return; 
+        e.preventDefault(); if (!isGameStarted || isDialogActive || isGameOver) return; 
         
         const rect = canvas.getBoundingClientRect(); const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
-        const gridX = Math.floor(((e.clientX - rect.left) * scaleX) / TILE_SIZE); const gridY = Math.floor(((e.clientY - rect.top) * scaleY) / TILE_SIZE);
+        const targetGridX = Math.floor(((e.clientX - rect.left) * scaleX) / TILE_SIZE); const targetGridY = Math.floor(((e.clientY - rect.top) * scaleY) / TILE_SIZE);
         const scene = scenes[currentScene];
 
-        let clickedNPC = scene.npcs.find(n => n.x === gridX && n.y === gridY);
+        let clickedNPC = scene.npcs.find(n => n.gridX === targetGridX && n.gridY === targetGridY);
         
         if (clickedNPC) {
-            let path = findPath(player.x, player.y, clickedNPC.x, clickedNPC.y, true);
-            if (path !== null) {
-                walkPath(path, () => { 
-                    let isStillAdjacent = Math.abs(player.x - clickedNPC.x) + Math.abs(player.y - clickedNPC.y) === 1;
-                    if (isStillAdjacent) {
-                        faceTarget(clickedNPC.x, clickedNPC.y); 
-                        startDialog(clickedNPC); 
-                    } else {
-                        showToast(`哎呀！${clickedNPC.name} 跑掉了！`, true);
-                    }
-                });
-            }
+            let path = findPath(player.gridX, player.gridY, clickedNPC.gridX, clickedNPC.gridY, true);
+            if (path !== null) startWalk(path, () => { 
+                let isStillAdjacent = Math.abs(player.gridX - clickedNPC.gridX) + Math.abs(player.gridY - clickedNPC.gridY) === 1;
+                if (isStillAdjacent) {
+                    player.facing = clickedNPC.gridX > player.gridX ? 'right' : clickedNPC.gridX < player.gridX ? 'left' : clickedNPC.gridY > player.gridY ? 'down' : 'up';
+                    startDialog(clickedNPC); 
+                }
+            });
         } 
-        else if (gridX === scene.portal.x && gridY === scene.portal.y) {
-            let path = findPath(player.x, player.y, gridX, gridY, true);
-            if (path !== null) {
-                walkPath(path, () => { 
-                    faceTarget(scene.portal.x, scene.portal.y); 
-                    currentScene = scene.portal.toScene; 
-                    player.x = scene.portal.toX; 
-                    player.y = scene.portal.toY; 
-                    draw(); 
-                });
-            }
+        else if (targetGridX === scene.portal.x && targetGridY === scene.portal.y) {
+            let path = findPath(player.gridX, player.gridY, targetGridX, targetGridY, true);
+            if (path !== null) startWalk(path, () => { 
+                currentScene = scene.portal.toScene; 
+                player.gridX = scene.portal.toX; player.gridY = scene.portal.toY; 
+                player.pixelX = player.gridX * TILE_SIZE; player.pixelY = player.gridY * TILE_SIZE;
+            });
         }
-        else if (isWalkable(gridX, gridY)) {
-            let path = findPath(player.x, player.y, gridX, gridY, false);
-            if (path !== null) walkPath(path, null);
+        else if (isWalkable(targetGridX, targetGridY)) {
+            let path = findPath(player.gridX, player.gridY, targetGridX, targetGridY, false);
+            if (path !== null) startWalk(path, null);
         }
     });
 
-    function drawNameLabel(name, gridX, gridY, isPlayer = false) {
-        const px = gridX * TILE_SIZE + TILE_SIZE / 2;
-        const py = gridY * TILE_SIZE + 6; 
-        
-        ctx.font = 'bold 12px "微軟正黑體", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = '#000000';
-        ctx.strokeText(name, px, py);
-        
-        ctx.fillStyle = isPlayer ? '#ffd32a' : '#ffffff';
-        ctx.fillText(name, px, py);
-    }
-
-    function drawGraphic(icon, x, y, w = 1, h = 1) {
-        let size = w > 1 ? 55 : 30; let offsetX = w > 1 ? TILE_SIZE/2 : 0; let offsetY = h > 1 ? TILE_SIZE/2 : 0;
-        ctx.fillStyle = '#000000'; ctx.font = `${size}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(icon, x * TILE_SIZE + TILE_SIZE/2 + offsetX, y * TILE_SIZE + TILE_SIZE/2 + offsetY + 2);
-    }
-
-    function draw() {
+    // --- 🤖 NPC 隨機移動 ---
+    setInterval(() => {
+        if (!isGameStarted || isDialogActive || isGameOver) return;
         const scene = scenes[currentScene];
+        
+        for (let npc of scene.npcs) {
+            if (!npc.canMove || Math.random() > 0.6) continue;
+
+            const dirs = [ {dx:0,dy:-1}, {dx:0,dy:1}, {dx:-1,dy:0}, {dx:1,dy:0} ];
+            const dir = dirs[Math.floor(Math.random() * dirs.length)];
+            const nx = npc.gridX + dir.dx; const ny = npc.gridY + dir.dy;
+
+            if (Math.abs(nx - npc.startX) > 3 || Math.abs(ny - npc.startY) > 3) continue;
+            if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) continue;
+            if (nx === player.gridX && ny === player.gridY) continue; 
+            if (nx === scene.portal.x && ny === scene.portal.y) continue; 
+            
+            let collision = false;
+            for (let obj of scene.objects) if (nx >= obj.x && nx < obj.x + obj.w && ny >= obj.y && ny < obj.y + obj.h) collision = true;
+            for (let otherNpc of scene.npcs) if (nx === otherNpc.gridX && ny === otherNpc.gridY) collision = true;
+            
+            if (!collision) {
+                npc.gridX = nx; npc.gridY = ny;
+            }
+        }
+    }, 1200);
+
+    // ==========================================
+    // 🎨 【V2.0 順滑繪圖引擎 (requestAnimationFrame)】
+    // ==========================================
+    function lerp(start, end, factor) { return start + (end - start) * factor; }
+
+    function drawNameLabel(name, px, py, isPlayer = false) {
+        ctx.font = '900 12px "微軟正黑體", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.strokeText(name, px, py - 4);
+        ctx.fillStyle = isPlayer ? '#ffd32a' : '#ffffff'; ctx.fillText(name, px, py - 4);
+    }
+
+    function drawGraphic(icon, px, py, sizeClass = 30) {
+        ctx.fillStyle = '#000000'; ctx.font = `${sizeClass}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(icon, px, py + 2);
+    }
+
+    function gameLoop(timestamp) {
+        const scene = scenes[currentScene];
+        
+        // 1. 玩家平滑移動邏輯
+        if (isMoving && pathQueue.length > 0) {
+            let targetX = pathQueue[0].x * TILE_SIZE;
+            let targetY = pathQueue[0].y * TILE_SIZE;
+            
+            // 逼近目標
+            player.pixelX = lerp(player.pixelX, targetX, 0.2);
+            player.pixelY = lerp(player.pixelY, targetY, 0.2);
+            player.facing = pathQueue[0].dir;
+
+            // 抵達該格
+            if (Math.abs(player.pixelX - targetX) < 1 && Math.abs(player.pixelY - targetY) < 1) {
+                player.gridX = pathQueue[0].x;
+                player.gridY = pathQueue[0].y;
+                player.pixelX = targetX; player.pixelY = targetY;
+                pathQueue.shift();
+                
+                // 檢查道具
+                let item = scene.items?.find(i => i.x === player.gridX && i.y === player.gridY && !i.picked);
+                if (item) { item.picked = true; changeMood(item.heal); }
+
+                stepCount++;
+                if (stepCount >= 8) { stepCount = 0; changeMood(-1); }
+
+                // 走完路徑
+                if (pathQueue.length === 0) {
+                    isMoving = false;
+                    if (finalPathAction) finalPathAction();
+                }
+            }
+        }
+
+        // NPC 平滑移動
+        for (let npc of scene.npcs) {
+            npc.pixelX = lerp(npc.pixelX, npc.gridX * TILE_SIZE, 0.15);
+            npc.pixelY = lerp(npc.pixelY, npc.gridY * TILE_SIZE, 0.15);
+        }
+
+        // --- 繪製畫面 ---
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 畫地板
         for(let r = 0; r < ROWS; r++) {
             for(let c = 0; c < COLS; c++) {
                 ctx.fillStyle = scene.type === 'grass' ? textures.grass : textures.wood;
@@ -738,39 +696,69 @@
             }
         }
 
-        drawGraphic(scene.portal.icon, scene.portal.x, scene.portal.y, 1, 1);
+        // 畫門
+        drawGraphic(scene.portal.icon, scene.portal.x * TILE_SIZE + TILE_SIZE/2, scene.portal.y * TILE_SIZE + TILE_SIZE/2);
         
+        // 畫道具 (加入呼吸浮動動畫)
+        let breatheOffset = Math.sin(timestamp / 200) * 3; 
         if (scene.items) {
-            for (let item of scene.items) { if (!item.picked) { drawGraphic(item.icon, item.x, item.y, 1, 1); } }
+            for (let item of scene.items) { 
+                if (!item.picked) drawGraphic(item.icon, item.x * TILE_SIZE + TILE_SIZE/2, item.y * TILE_SIZE + TILE_SIZE/2 + breatheOffset); 
+            }
         }
 
-        for (let obj of scene.objects) drawGraphic(obj.icon, obj.x, obj.y, obj.w, obj.h);
+        // 畫靜態物件
+        for (let obj of scene.objects) {
+            let w = obj.w; let h = obj.h;
+            let cx = obj.x * TILE_SIZE + (w * TILE_SIZE)/2; let cy = obj.y * TILE_SIZE + (h * TILE_SIZE)/2;
+            drawGraphic(obj.icon, cx, cy, w > 1 ? 55 : 30);
+        }
 
+        // 畫 NPC
         for (let npc of scene.npcs) {
-            ctx.fillStyle = 'rgba(0,0,0,0.2)'; 
-            ctx.beginPath(); ctx.ellipse(npc.x * TILE_SIZE + 20, npc.y * TILE_SIZE + 32, 12, 6, 0, 0, Math.PI*2); ctx.fill();
-            drawGraphic(npc.icon, npc.x, npc.y, 1, 1); 
-            drawNameLabel(npc.name, npc.x, npc.y); 
+            let cx = npc.pixelX + TILE_SIZE/2; let cy = npc.pixelY + TILE_SIZE/2;
+            ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(cx, cy + 12, 12, 6, 0, 0, Math.PI*2); ctx.fill(); // 陰影
+            drawGraphic(npc.icon, cx, cy + breatheOffset); 
+            drawNameLabel(npc.name, cx, cy); 
         }
 
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        ctx.beginPath(); ctx.ellipse(player.x * TILE_SIZE + 20, player.y * TILE_SIZE + 32, 12, 6, 0, 0, Math.PI*2); ctx.fill();
-        drawGraphic(player.icon, player.x, player.y, 1, 1);
-        drawNameLabel("隊輔", player.x, player.y, true); 
+        // 畫玩家
+        let px = player.pixelX + TILE_SIZE/2; let py = player.pixelY + TILE_SIZE/2;
+        ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(px, py + 12, 12, 6, 0, 0, Math.PI*2); ctx.fill();
+        drawGraphic(player.icon, px, py + breatheOffset);
+        drawNameLabel("隊輔", px, py, true); 
 
-        const px = player.x * TILE_SIZE + TILE_SIZE/2;
-        const py = player.y * TILE_SIZE + TILE_SIZE/2;
-        ctx.fillStyle = "#54a0ff"; ctx.beginPath();
-        if(player.facing === 'up') { ctx.moveTo(px, py-20); ctx.lineTo(px-6, py-12); ctx.lineTo(px+6, py-12); }
-        if(player.facing === 'down') { ctx.moveTo(px, py+20); ctx.lineTo(px-6, py+12); ctx.lineTo(px+6, py+12); }
-        if(player.facing === 'left') { ctx.moveTo(px-20, py); ctx.lineTo(px-12, py-6); ctx.lineTo(px-12, py+6); }
-        if(player.facing === 'right') { ctx.moveTo(px+20, py); ctx.lineTo(px+12, py-6); ctx.lineTo(px+12, py+6); }
+        // 畫視線指示器
+        ctx.fillStyle = "rgba(84, 160, 255, 0.8)"; ctx.beginPath();
+        if(player.facing === 'up') { ctx.moveTo(px, py-22); ctx.lineTo(px-6, py-14); ctx.lineTo(px+6, py-14); }
+        if(player.facing === 'down') { ctx.moveTo(px, py+22); ctx.lineTo(px-6, py+14); ctx.lineTo(px+6, py+14); }
+        if(player.facing === 'left') { ctx.moveTo(px-22, py); ctx.lineTo(px-14, py-6); ctx.lineTo(px-14, py+6); }
+        if(player.facing === 'right') { ctx.moveTo(px+22, py); ctx.lineTo(px+14, py-6); ctx.lineTo(px+14, py+6); }
         ctx.fill();
+
+        // 🌟 V2.0：繪製漂浮文字
+        for (let i = floatingTexts.length - 1; i >= 0; i--) {
+            let ft = floatingTexts[i];
+            ft.y -= 0.5; // 緩緩上升
+            ft.life -= 0.02; // 生命週期扣除
+            if (ft.life <= 0) { floatingTexts.splice(i, 1); continue; }
+            
+            ctx.font = '900 20px "微軟正黑體", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.strokeStyle = 'black'; ctx.lineWidth = 4;
+            ctx.globalAlpha = ft.life; // 淡出
+            ctx.strokeText(ft.text, ft.x, ft.y);
+            ctx.fillStyle = ft.color;
+            ctx.fillText(ft.text, ft.x, ft.y);
+            ctx.globalAlpha = 1.0;
+        }
+
+        requestAnimationFrame(gameLoop);
     }
 
-    updateMoodUI(); 
-    updateQuestUI(); 
-    draw(); 
+    // 啟動迴圈
+    requestAnimationFrame(gameLoop);
+
 </script>
 </body>
 </html>
