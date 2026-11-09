@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>營隊生存模擬器 | MMO 旗艦版</title>
 <style>
     /* ================= ⚔️ MMO 現代化 CSS 樣式 ⚔️ ================= */
@@ -12,21 +12,28 @@
     }
     body, html { 
         margin: 0; padding: 0; background: #050505; 
-        touch-action: none; user-select: none; -webkit-user-select: none;
+        touch-action: none; /* 禁用手機瀏覽器預設的滑動與縮放手勢 */
+        user-select: none; -webkit-user-select: none;
         height: 100vh; width: 100vw; overflow: hidden;
         font-family: '微軟正黑體', -apple-system, sans-serif;
     }
     
-    /* 遊戲主畫布 */
+    /* 遊戲主畫布容器 */
     #game-container {
         position: relative; width: 100vw; height: 100vh;
         display: flex; justify-content: center; align-items: center;
         transition: transform 0.1s; 
         overflow: hidden;
     }
+    
+    /* 核心畫布響應式設定 */
     canvas { 
-        width: 100%; height: 100%; max-width: 1200px; max-height: 750px; 
-        object-fit: contain; image-rendering: pixelated; cursor: crosshair;
+        width: 100vw; 
+        max-width: 1200px;
+        aspect-ratio: 16 / 10; /* 維持遊戲比例 */
+        object-fit: contain; 
+        image-rendering: pixelated; 
+        cursor: crosshair;
         box-shadow: 0 0 50px rgba(0,0,0,0.8);
     }
 
@@ -106,9 +113,37 @@
     }
     .btn-action:active { transform: scale(0.95); }
 
-    /* 💥 震動特效 */
     .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
     @keyframes shake { 10%, 90% { transform: translate3d(-3px, 0, 0); } 20%, 80% { transform: translate3d(5px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
+
+    /* ================= 📱 手機版 RWD 響應式優化 ================= */
+    @media (max-width: 768px) {
+        #hud-player { top: 10px; left: 10px; padding: 5px 10px 5px 5px; }
+        #player-avatar { width: 35px; height: 35px; font-size: 20px; margin-right: 10px; }
+        #player-info { width: 110px; }
+        #player-name { font-size: 13px; margin-bottom: 2px; }
+        
+        #hud-quest { top: 10px; right: 10px; padding: 10px; min-width: 140px; }
+        .quest-title { font-size: 12px; margin-bottom: 6px; }
+        .quest-item { font-size: 12px; margin-bottom: 4px; }
+        #timer-display { font-size: 14px; margin-top: 6px; }
+
+        #hud-chat { bottom: 10px; left: 10px; width: 220px; height: 100px; padding: 5px; }
+        .chat-msg { font-size: 11px; }
+
+        #dialog-box { bottom: 10px; width: 95%; padding: 15px; }
+        #dialog-name { font-size: 18px; margin-bottom: 6px; }
+        #dialog-text { font-size: 15px; }
+        .choice-btn { padding: 10px 15px; font-size: 15px; margin-top: 5px; }
+
+        #start-screen-overlay div:nth-child(1) { font-size: 50px!important; margin-bottom: 5px!important; }
+        #start-screen-overlay div:nth-child(2) { font-size: 28px!important; margin-bottom: 10px!important; }
+        #start-screen-overlay div:nth-child(3) { font-size: 13px!important; padding: 15px!important; width: 85%; line-height: 1.6!important;}
+        .btn-action { font-size: 18px; padding: 12px 30px; margin-top: 15px; }
+        
+        #ending-title { font-size: 32px!important; }
+        #ending-desc { font-size: 15px!important; padding: 0 15px; }
+    }
 </style>
 </head>
 <body>
@@ -122,7 +157,7 @@
         <div id="player-info">
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 6px;">
                 <div id="player-name">Lv.99 傳說隊輔</div>
-                <div id="mood-text" style="font-size: 13px; font-weight: bold; color: #a4b0be;">15/15</div>
+                <div id="mood-text" style="font-size: 12px; font-weight: bold; color: #a4b0be;">15/15</div>
             </div>
             <div id="hp-bar-bg"><div id="hp-bar"></div></div>
         </div>
@@ -145,7 +180,7 @@
         <div id="dialog-name"></div>
         <div id="dialog-text"></div>
         <div id="choices-container"></div>
-        <div id="dialog-hint">▼ 點擊繼續</div>
+        <div id="dialog-hint">▼ 點擊繼續 (或點擊對話框)</div>
     </div>
     
     <!-- 📖 開始畫面 -->
@@ -201,8 +236,8 @@
     let currentDialogIndex = 0;  
     
     let talkedTo = new Set();
-    const requiredNPCs = ['小明', '小偉', '大華', '小美', '總籌', '邱曉昕', '副籌', '瓜瓜'];
-    const QUEST_GOAL = requiredNPCs.length; // 增加瓜瓜，目標變為8人
+    const requiredNPCs = ['小明', '小偉', '大華', '小美', '總籌', '邱曉昕', '副籌'];
+    const QUEST_GOAL = requiredNPCs.length;
 
     const MAX_MOOD = 15; 
     let currentMood = MAX_MOOD;
@@ -248,7 +283,7 @@
                         { question: '講師正在生氣，你要如何應對？', 
                           choices: [
                             { text: '立刻協助安撫台下學員', moodChange: -1, hiddenScore: 1, reply: '謝謝，終於安靜一點了。(獲得肯定)' },
-                            { text: '在旁邊滑手機不管他', moodChange: -3, hiddenScore: -1, reply: '那位隊輔！不要再滑手機了！(被點名，心情大傷 -3)' }
+                            { text: '在旁邊滑手機不管他', moodChange: -3, hiddenScore: -1, reply: '那位隊輔！不要再滑手機了！(心情大傷 -3)' }
                           ] 
                         }
                     ], moodChange: 0 
@@ -388,7 +423,7 @@
         if (timerInterval) clearInterval(timerInterval);
         updateTimerUI(); 
         timerInterval = setInterval(() => {
-            if (isGameOver || !isGameStarted || isDialogActive) return; // 說話時暫停計時
+            if (isGameOver || !isGameStarted || isDialogActive) return; 
             remainingTime--; updateTimerUI();
             
             if (remainingTime === 10) logSystem("[警告] 距離結營只剩 10 秒！", "damage");
@@ -545,37 +580,25 @@
         }
     }
 
-    // ==========================================
-    // 💬 對話系統 (🛡️使用最穩定的 onclick 修正觸控失效問題)
-    // ==========================================
-    const choicesContainer = document.getElementById('choices-container');
-
+    // --- 對話系統 ---
     function renderDialog() {
         let msg = currentDialogNPC.msgs[currentDialogIndex];
         if (typeof msg === 'string') {
             document.getElementById('dialog-text').innerText = msg;
-            document.getElementById('dialog-hint').style.display = 'block'; 
-            choicesContainer.style.display = 'none';
+            document.getElementById('dialog-hint').style.display = 'block'; choicesContainer.style.display = 'none';
             document.getElementById('dialog-hint').innerText = (currentDialogIndex < currentDialogNPC.msgs.length - 1) ? '▼ 點擊繼續' : '▼ 點擊結束';
         } else {
             document.getElementById('dialog-text').innerText = msg.question;
-            document.getElementById('dialog-hint').style.display = 'none'; 
-            choicesContainer.innerHTML = '';
+            document.getElementById('dialog-hint').style.display = 'none'; choicesContainer.innerHTML = '';
             msg.choices.forEach(choice => {
-                let btn = document.createElement('div'); 
-                btn.className = 'choice-btn'; 
-                btn.innerText = choice.text;
-                // 🛑 修復關鍵：全面改用 onclick 確保手機點擊不會被吃掉
+                let btn = document.createElement('div'); btn.className = 'choice-btn'; btn.innerText = choice.text;
                 btn.onclick = (e) => {
                     e.stopPropagation();
-                    changeMood(choice.moodChange); 
-                    currentHiddenScore += choice.hiddenScore;
+                    changeMood(choice.moodChange); currentHiddenScore += choice.hiddenScore;
                     if (isGameOver) return;
                     
                     document.getElementById('dialog-text').innerText = choice.reply;
-                    choicesContainer.style.display = 'none'; 
-                    document.getElementById('dialog-hint').style.display = 'block'; 
-                    document.getElementById('dialog-hint').innerText = '▼ 點擊結束';
+                    choicesContainer.style.display = 'none'; document.getElementById('dialog-hint').style.display = 'block'; document.getElementById('dialog-hint').innerText = '▼ 點擊結束';
                     currentDialogIndex = currentDialogNPC.msgs.length; 
                 };
                 choicesContainer.appendChild(btn);
@@ -596,16 +619,14 @@
             logSystem(`[任務] 進度更新 (${talkedTo.size}/${QUEST_GOAL})`, "info");
         }
 
-        currentDialogNPC = npc; currentDialogIndex = 0; 
-        document.getElementById('dialog-name').innerText = npc.name;
+        currentDialogNPC = npc; currentDialogIndex = 0; document.getElementById('dialog-name').innerText = npc.name;
         dialogBox.style.display = 'block'; isDialogActive = true;
         renderDialog();
     }
 
-    // 🛑 修復關鍵：將對話框推進事件也改為 onclick，避免與手機點擊事件衝突
     dialogBox.onclick = (e) => {
         e.stopPropagation();
-        if (typeof currentDialogNPC.msgs[currentDialogIndex] === 'object') return; // 如果正在顯示選項，忽略點擊對話框
+        if (typeof currentDialogNPC.msgs[currentDialogIndex] === 'object') return; 
 
         if (currentDialogNPC && currentDialogIndex < currentDialogNPC.msgs.length - 1) {
             currentDialogIndex++; renderDialog();
@@ -615,15 +636,16 @@
         }
     };
 
+    // 💡 修復關鍵：使用最基礎強大的 offset 點擊計算，無懼任何手機 CSS 縮放干擾！
     canvas.addEventListener('pointerdown', (e) => {
         e.preventDefault(); 
         if (!isGameStarted || isDialogActive || isGameOver) return; 
         
         const rect = canvas.getBoundingClientRect(); 
-        const scaleX = canvas.width / rect.width; 
-        const scaleY = canvas.height / rect.height;
-        const targetGridX = Math.floor(((e.clientX - rect.left) * scaleX) / TILE_SIZE); 
-        const targetGridY = Math.floor(((e.clientY - rect.top) * scaleY) / TILE_SIZE);
+        // 算出點擊位置在 canvas 內部的相對比例，再乘上虛擬網格數量，精準無誤！
+        const targetGridX = Math.floor(((e.clientX - rect.left) / rect.width) * COLS); 
+        const targetGridY = Math.floor(((e.clientY - rect.top) / rect.height) * ROWS);
+        
         const scene = scenes[currentScene];
 
         let clickedNPC = scene.npcs.find(n => n.gridX === targetGridX && n.gridY === targetGridY);
@@ -685,13 +707,8 @@
 
     function drawNameLabel(title, name, px, py, isPlayer = false) {
         ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillStyle = isPlayer ? '#feca57' : '#a4b0be';
-        ctx.fillText(`[${title}]`, px, py - 18);
-
-        ctx.font = '900 14px "微軟正黑體", sans-serif'; 
-        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.strokeText(name, px, py - 3);
+        ctx.font = 'bold 11px sans-serif'; ctx.fillStyle = isPlayer ? '#feca57' : '#a4b0be'; ctx.fillText(`[${title}]`, px, py - 18);
+        ctx.font = '900 14px "微軟正黑體", sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.strokeText(name, px, py - 3);
         ctx.fillStyle = isPlayer ? '#1dd1a1' : '#ffffff'; ctx.fillText(name, px, py - 3);
     }
 
