@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
+<!-- 💡 加入 viewport-fit=cover 確保適應所有瀏海與全螢幕手機 -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>營隊生存模擬器 | MMO 旗艦版</title>
 <style>
@@ -10,71 +11,69 @@
         --primary: #4facfe; --danger: #ff4757; --success: #2ed573; --warning: #ffa502;
         --hud-bg: rgba(15, 20, 30, 0.75); --hud-border: rgba(79, 172, 254, 0.4);
     }
+    
     body, html { 
         margin: 0; padding: 0; background: #050505; 
         touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
         width: 100vw; overflow: hidden;
-        /* 💡 絕對修復1：使用 100dvh 避開手機瀏覽器上下工具列的干擾 */
-        height: 100%; height: 100dvh; 
+        /* 💡 終極解法：使用 dVH 動態高度，並加上 iOS Safari 專用修復 */
+        height: 100vh; height: 100dvh; 
         font-family: '微軟正黑體', -apple-system, sans-serif;
     }
     
     #game-container {
         position: relative; width: 100%; height: 100%; 
         display: flex; justify-content: center; align-items: center; 
-        transition: transform 0.1s; overflow: hidden;
+    }
+    
+    #canvas-wrapper {
+        position: relative; width: 100%; max-width: 1200px; aspect-ratio: 16 / 10;
+        box-shadow: 0 0 50px rgba(0,0,0,0.8);
     }
     
     canvas { 
-        width: 100%; height: 100%; max-width: 1200px; max-height: 750px; 
+        width: 100%; height: 100%; display: block;
         object-fit: contain; image-rendering: pixelated; cursor: crosshair;
-        box-shadow: 0 0 50px rgba(0,0,0,0.8);
     }
 
-    /* ================= 🛡️ 頂部 HUD 防撞容器 ================= */
-    #hud-container {
-        position: absolute; top: env(safe-area-inset-top, 10px); left: 0; width: 100%;
-        display: flex; justify-content: space-between; align-items: flex-start;
-        padding: 15px 20px; box-sizing: border-box; z-index: 20; pointer-events: none;
-    }
-
+    /* ================= 🛡️ HUD 介面 (改用 Fixed 強制釘在畫面上) ================= */
     .hud-panel {
         background: var(--hud-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
         border: 1px solid var(--hud-border); border-radius: 12px; color: #fff; pointer-events: none;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 20; position: fixed;
     }
 
     /* 左上：玩家資訊 */
-    #hud-player { display: flex; align-items: center; padding: 8px 15px 8px 8px; border-radius: 50px; }
+    #hud-player { top: env(safe-area-inset-top, 20px); left: 20px; display: flex; align-items: center; padding: 8px 15px 8px 8px; border-radius: 50px; }
     #player-avatar { font-size: 30px; background: linear-gradient(135deg, #2f3542, #1e272e); border: 2px solid var(--primary); border-radius: 50%; width: 55px; height: 55px; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px var(--primary); margin-right: 15px; }
-    #player-info { display: flex; flex-direction: column; width: 160px;}
+    #player-info { display: flex; flex-direction: column; width: 170px;}
     #player-name { font-size: 15px; font-weight: 900; color: var(--primary); text-shadow: 0 2px 4px rgba(0,0,0,0.8);}
     #hp-bar-bg { width: 100%; height: 12px; background: rgba(0,0,0,0.6); border-radius: 6px; overflow: hidden; border: 1px solid #333;}
     #hp-bar { height: 100%; width: 100%; background: var(--success); transition: width 0.3s, background 0.3s; box-shadow: inset 0 0 5px rgba(255,255,255,0.5);}
 
     /* 右上：任務追蹤 */
-    #hud-quest { padding: 15px; min-width: 180px; }
+    #hud-quest { top: env(safe-area-inset-top, 20px); right: 20px; padding: 15px; min-width: 200px; }
     .quest-title { font-size: 14px; color: var(--warning); font-weight: 900; margin-bottom: 10px; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 5px; letter-spacing: 1px;}
     .quest-item { font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between;}
     #timer-display { font-size: 18px; font-weight: 900; color: #fff; text-align: center; margin-top: 10px; text-shadow: 0 0 8px rgba(255,255,255,0.5);}
 
-    /* 系統訊息頻道 (電腦版顯示) */
-    #hud-chat { position: absolute; bottom: 20px; left: 20px; padding: 10px; width: 280px; height: 150px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; border: none; background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%); box-shadow: none; z-index: 10; pointer-events: none;}
+    /* 系統訊息頻道 */
+    #hud-chat { bottom: env(safe-area-inset-bottom, 20px); left: 20px; padding: 10px; width: 280px; height: 150px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; border: none; background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%); box-shadow: none; pointer-events: none;}
     .chat-msg { font-size: 13px; margin-top: 4px; animation: slideIn 0.3s ease forwards; text-shadow: 1px 1px 2px #000; font-weight: bold;}
     .chat-msg.system { color: #a4b0be; } .chat-msg.damage { color: var(--danger); } .chat-msg.heal { color: var(--success); } .chat-msg.info { color: var(--primary); }
     @keyframes slideIn { from { transform: translateX(-10px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
     /* ================= 💬 對話框 (絕對修復定位) ================= */
     #dialog-box {
-        position: absolute; 
-        /* 💡 絕對修復2：確保它固定在螢幕下方安全距離，不會被擠出去 */
-        bottom: max(20px, env(safe-area-inset-bottom)); 
+        position: fixed; /* 💡 絕對浮動在瀏覽器視窗最上層 */
+        bottom: max(25px, env(safe-area-inset-bottom)); /* 確保避開底部工具列與橫條 */
         left: 50%; transform: translateX(-50%); 
-        width: 90%; max-width: 650px;
+        width: 92%; max-width: 650px;
+        max-height: 60dvh; overflow-y: auto; /* 防呆：文字選項過多時可滑動 */
         background: linear-gradient(180deg, rgba(30, 40, 60, 0.95), rgba(15, 20, 30, 0.98)); 
-        border: 2px solid rgba(79, 172, 254, 0.6); border-radius: 12px; padding: 20px;
-        display: none; font-size: 18px; line-height: 1.6; z-index: 50; color: #fff;
-        pointer-events: auto; cursor: pointer; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        border: 2px solid rgba(79, 172, 254, 0.6); border-radius: 12px; padding: 20px; box-sizing: border-box;
+        display: none; font-size: 18px; line-height: 1.6; z-index: 9999; color: #fff;
+        pointer-events: auto; cursor: pointer; box-shadow: 0 10px 40px rgba(0,0,0,0.9);
     }
     #dialog-name { color: #feca57; font-weight: 900; margin-bottom: 10px; font-size: 22px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);}
     #dialog-hint { font-size: 14px; color: #888; margin-top: 15px; text-align: right; font-weight: bold; animation: pulse 1s infinite;}
@@ -85,43 +84,38 @@
     .choice-btn:active { background: rgba(79, 172, 254, 0.6); transform: scale(0.98); }
 
     /* 螢幕遮罩 */
-    .overlay-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; backdrop-filter: blur(5px); animation: fadeIn 0.5s ease forwards; }
+    .overlay-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; text-align: center; backdrop-filter: blur(5px); animation: fadeIn 0.5s ease forwards; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     .btn-action { margin-top: 30px; padding: 15px 40px; background: linear-gradient(90deg, var(--primary), #00f2fe); color: #fff; border-radius: 8px; cursor: pointer; font-size: 20px; font-weight: 900; box-shadow: 0 0 20px rgba(79, 172, 254, 0.5); pointer-events: auto; border: none; letter-spacing: 2px; }
     .btn-action:active { transform: scale(0.95); }
     .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
     @keyframes shake { 10%, 90% { transform: translate3d(-3px, 0, 0); } 20%, 80% { transform: translate3d(5px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
 
-    /* ================= 📱 手機版防重疊極限優化 ================= */
+    /* ================= 📱 手機版：防重疊極限排版 ================= */
     @media (max-width: 768px) {
-        #hud-container { padding: 10px 5px; } /* 減少兩側空白 */
+        /* 💡 終極防重疊解法：手機版將任務欄移到血條【正下方】，100% 絕不重疊！ */
+        #hud-player { top: max(15px, env(safe-area-inset-top)); left: 15px; transform: scale(0.9); transform-origin: top left; }
         
-        /* 💡 絕對修復3：極限縮小 UI，保證左右不打架 */
-        #hud-player { padding: 4px 8px 4px 4px; border-radius: 30px; }
-        #player-avatar { width: 32px; height: 32px; font-size: 18px; margin-right: 6px; }
-        #player-info { width: 95px; } /* 血條寬度大幅縮小 */
-        #player-name { font-size: 12px; margin-bottom: 2px; }
-        #mood-text { font-size: 10px !important; }
-        #hp-bar-bg { height: 8px; }
+        #hud-quest { 
+            top: max(85px, calc(env(safe-area-inset-top) + 70px)); /* 強制排在血條下方 */
+            left: 15px; /* 貼齊左邊 */
+            right: auto; /* 解除靠右，避免互相推擠 */
+            transform: scale(0.9); transform-origin: top left; 
+            padding: 12px; min-width: 150px; 
+        }
 
-        #hud-quest { padding: 8px; min-width: 120px; }
-        .quest-title { font-size: 11px; margin-bottom: 5px; }
-        .quest-item { font-size: 11px; margin-bottom: 4px; }
-        #timer-display { font-size: 14px; margin-top: 5px; }
-
-        /* 隱藏聊天視窗，避免擋住畫面 */
-        #hud-chat { display: none; } 
+        #hud-chat { display: none; } /* 隱藏聊天室，保持乾淨 */
         
         /* 對話框微調 */
-        #dialog-box { width: 95%; padding: 15px; }
-        #dialog-name { font-size: 18px; margin-bottom: 6px; }
-        #dialog-text { font-size: 15px; }
-        .choice-btn { padding: 10px 15px; font-size: 14px; margin-top: 5px; }
-        
-        /* 開始與結束畫面字體縮小 */
+        #dialog-box { padding: 18px; bottom: max(20px, env(safe-area-inset-bottom)); }
+        #dialog-name { font-size: 19px; margin-bottom: 6px; }
+        #dialog-text { font-size: 16px; }
+        .choice-btn { padding: 12px 15px; font-size: 15px; margin-top: 5px; }
+
+        /* 開始與結束畫面字體調整 */
         #start-screen-overlay div:nth-child(1) { font-size: 50px!important; margin-bottom: 5px!important; }
         #start-screen-overlay div:nth-child(2) { font-size: 28px!important; margin-bottom: 10px!important; }
-        #start-screen-overlay div:nth-child(3) { font-size: 13px!important; padding: 15px!important; width: 85%; line-height: 1.6!important;}
+        #start-screen-overlay div:nth-child(3) { font-size: 14px!important; padding: 15px!important; width: 85%; line-height: 1.6!important;}
         .btn-action { font-size: 18px; padding: 12px 30px; margin-top: 15px; }
         #ending-title { font-size: 32px!important; }
         #ending-desc { font-size: 15px!important; padding: 0 15px; }
@@ -132,26 +126,23 @@
 
 <div id="game-container">
     
-    <!-- 🛡️ 頂部 UI 防撞容器 -->
-    <div id="hud-container">
-        <!-- 玩家資訊 -->
-        <div id="hud-player" class="hud-panel">
-            <div id="player-avatar">🧚‍♀️</div>
-            <div id="player-info">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4px;">
-                    <div id="player-name">Lv.99 隊輔</div>
-                    <div id="mood-text" style="font-size: 13px; font-weight: bold; color: #a4b0be;">15/15</div>
-                </div>
-                <div id="hp-bar-bg"><div id="hp-bar"></div></div>
+    <!-- 🛡️ 玩家資訊 (置左上) -->
+    <div id="hud-player" class="hud-panel">
+        <div id="player-avatar">🧚‍♀️</div>
+        <div id="player-info">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4px;">
+                <div id="player-name">Lv.99 隊輔</div>
+                <div id="mood-text" style="font-size: 13px; font-weight: bold; color: #a4b0be;">15/15</div>
             </div>
+            <div id="hp-bar-bg"><div id="hp-bar"></div></div>
         </div>
+    </div>
 
-        <!-- 任務追蹤 -->
-        <div id="hud-quest" class="hud-panel">
-            <div class="quest-title">📜 主線任務：營隊危機</div>
-            <div class="quest-item"><span>安撫學員與幹部</span> <span id="quest-progress">0/7</span></div>
-            <div id="timer-display">⏱️ 80 秒</div>
-        </div>
+    <!-- 🛡️ 任務追蹤 (手機會自動移到左邊血條正下方) -->
+    <div id="hud-quest" class="hud-panel">
+        <div class="quest-title">📜 主線任務：營隊危機</div>
+        <div class="quest-item"><span>安撫學員與幹部</span> <span id="quest-progress">0/7</span></div>
+        <div id="timer-display">⏱️ 80 秒</div>
     </div>
 
     <!-- 🛡️ 系統頻道 (僅電腦顯示) -->
@@ -160,9 +151,11 @@
     </div>
 
     <!-- 🎮 遊戲本體 -->
-    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    <div id="canvas-wrapper">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+    </div>
 
-    <!-- 💬 對話框 (已修復定位，絕對置底) -->
+    <!-- 💬 對話框 (已修復絕對防遮擋) -->
     <div id="dialog-box">
         <div id="dialog-name"></div>
         <div id="dialog-text"></div>
@@ -171,12 +164,12 @@
     </div>
     
     <!-- 📖 開始畫面 -->
-    <div id="start-screen-overlay" class="overlay-screen" style="display: flex; background: rgba(20, 30, 40, 0.95); z-index: 200;">
+    <div id="start-screen-overlay" class="overlay-screen" style="display: flex; background: rgba(20, 30, 40, 0.95);">
         <div style="font-size: 70px; margin-bottom: 10px; filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.8));">🏕️</div>
         <div style="font-size: 35px; margin-bottom: 15px; font-weight: 900; letter-spacing: 2px; color: var(--primary);">營隊生存模擬器</div>
         
         <div style="font-size: 15px; color: #a4b0be; text-align: left; background: rgba(255,255,255,0.05); padding: 15px 25px; border-radius: 8px; border-left: 4px solid var(--primary); line-height: 1.6; max-width: 320px;">
-            <span style="color:#fff; font-weight:bold;">[操作]</span> 點擊遊戲畫面即可移動或對話。<br>
+            <span style="color:#fff; font-weight:bold;">[操作]</span> 點擊遊戲畫面任一處即可移動。<br>
             <span style="color:#fff; font-weight:bold;">[提示]</span> 每走 8 步會扣 1 點體力(HP)。<br>
             <span style="color:var(--warning); font-weight:bold;">[隱藏考核]</span> 對話選擇將決定結營評價！
         </div>
@@ -489,7 +482,6 @@
         document.getElementById('ending-overlay').style.display = 'none'; startTimer(); 
     }
 
-    // --- 尋路與移動邏輯 ---
     function isWalkable(x, y) {
         if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return false;
         const scene = scenes[currentScene];
@@ -523,7 +515,6 @@
         if (pathQueue.length === 0) { isMoving = false; if (finalPathAction) finalPathAction(); }
     }
 
-    // --- 對話系統 ---
     const choicesContainer = document.getElementById('choices-container');
     function renderDialog() {
         let msg = currentDialogNPC.msgs[currentDialogIndex];
