@@ -49,7 +49,7 @@
 
     #hud-player { display: flex; align-items: center; padding: 8px 15px 8px 8px; border-radius: 50px; }
     #player-avatar { font-size: 30px; background: linear-gradient(135deg, #2f3542, #1e272e); border: 2px solid var(--primary); border-radius: 50%; width: 55px; height: 55px; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px var(--primary); margin-right: 15px; overflow: hidden; }
-    #player-avatar img { width: 100%; height: 100%; object-fit: cover; display: none; }
+    #player-avatar img { width: 85%; height: 85%; object-fit: contain; display: none; }
     #player-info { display: flex; flex-direction: column; width: 170px;}
     #player-name { font-size: 15px; font-weight: 900; color: var(--primary); text-shadow: 0 2px 4px rgba(0,0,0,0.8);}
     #hp-bar-bg { width: 100%; height: 12px; background: rgba(0,0,0,0.6); border-radius: 6px; overflow: hidden; border: 1px solid #333;}
@@ -115,7 +115,6 @@
 
 <div id="game-container">
     
-    <!-- 🛡️ 頂部 UI 防撞容器 -->
     <div id="hud-container">
         <!-- 玩家資訊 -->
         <div id="hud-player" class="hud-panel">
@@ -137,17 +136,17 @@
         </div>
     </div>
 
-    <!-- 🛡️ 系統頻道 (僅電腦顯示) -->
+    <!-- 系統頻道 -->
     <div id="hud-chat" class="hud-panel">
         <div class="chat-msg system">歡迎來到營隊生存模擬器。</div>
     </div>
 
-    <!-- 🎮 遊戲本體 -->
+    <!-- 遊戲本體 -->
     <div id="canvas-wrapper">
         <canvas id="gameCanvas" width="800" height="500"></canvas>
     </div>
 
-    <!-- 💬 對話框 -->
+    <!-- 對話框 -->
     <div id="dialog-box">
         <div id="dialog-name"></div>
         <div id="dialog-text"></div>
@@ -155,7 +154,7 @@
         <div id="dialog-hint">▼ 點擊繼續 (或點擊對話框)</div>
     </div>
     
-    <!-- 📖 開始畫面 -->
+    <!-- 開始畫面 -->
     <div id="start-screen-overlay" class="overlay-screen" style="display: flex; background: rgba(20, 30, 40, 0.95); z-index: 200;">
         <div style="font-size: 70px; margin-bottom: 10px; filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.8));">🏕️</div>
         <div style="font-size: 35px; margin-bottom: 15px; font-weight: 900; letter-spacing: 2px; color: var(--primary);">營隊生存模擬器</div>
@@ -163,12 +162,12 @@
         <div style="font-size: 15px; color: #a4b0be; text-align: left; background: rgba(255,255,255,0.05); padding: 15px 25px; border-radius: 8px; border-left: 4px solid var(--primary); line-height: 1.6; max-width: 320px;">
             <span style="color:#fff; font-weight:bold;">[操作]</span> 點擊遊戲畫面即可移動。<br>
             <span style="color:#fff; font-weight:bold;">[提示]</span> 每走 8 步會扣 1 點體力(HP)。<br>
-            <span style="color:var(--warning); font-weight:bold;">[隱藏考核]</span> 對話選擇將決定下營評價！
+            <span style="color:var(--warning); font-weight:bold;">[隱藏考核]</span> 對話選擇將決定結營評價！
         </div>
         <button class="btn-action" onclick="startGame()">進入遊戲</button>
     </div>
 
-    <!-- 🥀 / 🎉 結局畫面 -->
+    <!-- 結局畫面 -->
     <div id="ending-overlay" class="overlay-screen" style="background: rgba(15, 15, 20, 0.95);">
         <div id="ending-icon" style="font-size: 60px; margin-bottom: 15px;"></div>
         <div id="ending-title" style="font-size: 40px; margin-bottom: 15px; font-weight: 900;"></div>
@@ -179,31 +178,45 @@
 
 <script>
     // ==========================================
-    // 🖼️ 【真實圖片素材庫 (外部 URL 版)】
+    // 🖼️ 【真實圖片素材庫 (修正 CORS 與尺寸限制)】
     // ==========================================
+    // 這裡我換成了風格精緻一致的 Twemoji 與高清 Unsplash 紋理
     const ASSET_URLS = {
-        floor_wood: 'https://images.unsplash.com/photo-1546484396-fb3fc6f95f98?w=100&auto=format&fit=crop',
-        floor_grass: 'https://images.unsplash.com/photo-1533460004989-acf295ce70eb?w=100&auto=format&fit=crop',
-        player: 'https://api.iconify.design/noto:person-fairy.svg', 
-        npc_guagua: 'https://api.iconify.design/noto:man-teacher.svg', 
-        npc_boy: 'https://api.iconify.design/noto:boy.svg', 
-        npc_girl: 'https://api.iconify.design/noto:girl.svg', 
-        npc_man: 'https://api.iconify.design/noto:man-student.svg', 
-        chair: 'https://api.iconify.design/noto:chair.svg', 
-        tree_big: 'https://api.iconify.design/noto:deciduous-tree.svg', 
-        tree_small: 'https://api.iconify.design/noto:evergreen-tree.svg', 
-        tent: 'https://api.iconify.design/noto:camping.svg', 
-        door: 'https://api.iconify.design/noto:door.svg', 
-        candy: 'https://api.iconify.design/noto:candy.svg', 
-        boba: 'https://api.iconify.design/noto:beverage-box.svg', 
-        banana: 'https://api.iconify.design/noto:banana.svg' 
+        floor_wood: 'https://images.unsplash.com/photo-1546484396-fb3fc6f95f98?w=200&h=200&fit=crop', // 木紋地板
+        floor_grass: 'https://images.unsplash.com/photo-1533460004989-acf295ce70eb?w=200&h=200&fit=crop', // 草地
+        player: 'https://api.iconify.design/twemoji/fairy.svg?width=128&height=128', 
+        npc_guagua: 'https://api.iconify.design/twemoji/man-teacher.svg?width=128&height=128', 
+        npc_boy: 'https://api.iconify.design/twemoji/boy.svg?width=128&height=128', 
+        npc_girl: 'https://api.iconify.design/twemoji/girl.svg?width=128&height=128', 
+        npc_man: 'https://api.iconify.design/twemoji/man-student.svg?width=128&height=128', 
+        chair: 'https://api.iconify.design/twemoji/chair.svg?width=128&height=128', 
+        tree_big: 'https://api.iconify.design/twemoji/deciduous-tree.svg?width=128&height=128', 
+        tree_small: 'https://api.iconify.design/twemoji/evergreen-tree.svg?width=128&height=128', 
+        tent: 'https://api.iconify.design/twemoji/tent.svg?width=128&height=128', 
+        door: 'https://api.iconify.design/twemoji/door.svg?width=128&height=128', 
+        candy: 'https://api.iconify.design/twemoji/candy.svg?width=128&height=128', 
+        boba: 'https://api.iconify.design/twemoji/bubble-tea.svg?width=128&height=128', 
+        banana: 'https://api.iconify.design/twemoji/banana.svg?width=128&height=128' 
     };
 
     const images = {};
     for (let key in ASSET_URLS) {
         images[key] = new Image();
+        // 💡 終極防禦：加入跨域允許，打破 Canvas 阻擋圖片渲染的限制！
+        images[key].crossOrigin = "Anonymous"; 
         images[key].src = ASSET_URLS[key];
     }
+
+    // 當玩家頭像載入完成，立刻更新左上角的 HUD
+    images['player'].onload = function() {
+        const avatarEmoji = document.getElementById('avatar-emoji');
+        const avatarImg = document.getElementById('avatar-img');
+        if(avatarEmoji && avatarImg) {
+            avatarEmoji.style.display = 'none';
+            avatarImg.src = this.src;
+            avatarImg.style.display = 'block';
+        }
+    };
 
     // ==========================================
     // ⚙️ 核心設定 
@@ -276,10 +289,10 @@
             portal: { x: 8, y: 9, icon: '🚪', imgKey: 'door', toScene: 'outdoor', toX: 8, toY: 1 },
             npcs: [
                 { 
-                    x: 8, y: 1, icon: '👨‍🏫', imgKey: 'npc_guagua', title: '講者', name: '瓜瓜', canMove: false, 
+                    x: 8, y: 1, icon: '👨‍🏫', imgKey: 'npc_guagua', title: '講師', name: '瓜瓜', canMove: false, 
                     msgs: [
                         '為什麼還安靜不下來？', '請各位隊輔幫我管秩序！',
-                        { question: '講者正在生氣，你要如何應對？', 
+                        { question: '講師正在生氣，你要如何應對？', 
                           choices: [
                             { text: '立刻協助安撫學員', moodChange: -1, hiddenScore: 1, reply: '謝謝，終於安靜一點了。(獲得肯定)' },
                             { text: '滑手機不管他', moodChange: -3, hiddenScore: -1, reply: '那位隊輔！不要滑手機了！(心情大傷 -3)' }
@@ -408,13 +421,6 @@
         isGameStarted = true;
         document.getElementById('start-screen-overlay').style.display = 'none';
         logSystem("[系統] 遊戲開始，請注意時間！", "system");
-        
-        if (images['player'] && images['player'].complete && images['player'].naturalWidth > 0) {
-            document.getElementById('avatar-emoji').style.display = 'none';
-            document.getElementById('avatar-img').src = images['player'].src;
-            document.getElementById('avatar-img').style.display = 'block';
-        }
-
         startTimer(); 
     }
 
@@ -431,7 +437,7 @@
             if (isGameOver || !isGameStarted || isDialogActive) return; 
             remainingTime--; updateTimerUI();
             
-            if (remainingTime === 10) logSystem("[警告] 距離下營只剩 10 秒！", "damage");
+            if (remainingTime === 10) logSystem("[警告] 距離結營只剩 10 秒！", "damage");
             if (remainingTime <= 0) triggerGameOver("timeup");
         }, 1000);
     }
@@ -471,7 +477,7 @@
         
         if (reason === "timeup") {
             icon.innerText = '⏳'; title.innerText = '任務超時'; title.style.color = 'var(--warning)';
-            desc.innerHTML = '動作太慢了，營隊大混亂，進度嚴重落後...<br>下營檢討會被電爆了。';
+            desc.innerHTML = '動作太慢了，營隊大混亂，進度嚴重落後...<br>結營檢討會被電爆了。';
         } else {
             icon.innerText = '💀'; title.innerText = '體力耗盡'; title.style.color = 'var(--danger)';
             desc.innerHTML = '小學員暴走、進度落後，你累癱在營隊中。<br>無法繼續勝任隊輔工作。';
@@ -490,7 +496,7 @@
             icon.innerText = '🏆'; title.innerText = '傳說級隊輔！'; title.style.color = 'var(--warning)';
             desc.innerHTML = `隱藏考核分數：<span style="color:var(--warning);font-size:24px;">${currentHiddenScore}/${MAX_HIDDEN_SCORE}</span><br><br>你成功解決了所有危機，而且處事非常成熟！大家都覺得你是一位超級優秀的隊輔！`;
         } else {
-            icon.innerText = '😅'; title.innerText = '勉強下營...'; title.style.color = '#a4b0be';
+            icon.innerText = '😅'; title.innerText = '勉強結營...'; title.style.color = '#a4b0be';
             desc.innerHTML = `隱藏考核分數：<span style="color:var(--danger);font-size:24px;">${currentHiddenScore}/${MAX_HIDDEN_SCORE}</span><br><br>雖然撐過了營隊，但處理危機的方式太過急躁。下次再多點耐心吧！`;
         }
         overlay.style.display = 'flex'; logSystem("[系統] 任務完成，正在結算成績...", "heal");
@@ -674,6 +680,7 @@
         ctx.fillStyle = isPlayer ? '#1dd1a1' : '#ffffff'; ctx.fillText(name, px, py - 3);
     }
 
+    // 💡 繪製真實圖片邏輯
     function drawGraphic(imgKey, icon, px, py, tilesW = 1, tilesH = 1) {
         if (imgKey && images[imgKey] && images[imgKey].complete && images[imgKey].naturalWidth > 0) {
             let imgW = tilesW * TILE_SIZE; let imgH = tilesH * TILE_SIZE;
@@ -714,6 +721,7 @@
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
+        // 💡 繪製高畫質地板
         for(let r = 0; r < ROWS; r++) {
             for(let c = 0; c < COLS; c++) {
                 let floorKey = scene.type === 'grass' ? 'floor_grass' : 'floor_wood';
@@ -727,7 +735,6 @@
         }
 
         drawGraphic(scene.portal.imgKey, scene.portal.icon, scene.portal.x * TILE_SIZE + TILE_SIZE/2, scene.portal.y * TILE_SIZE + TILE_SIZE/2, 1, 1);
-        
         let breatheOffset = Math.sin(timestamp / 200) * 3; 
         
         if (scene.items) {
