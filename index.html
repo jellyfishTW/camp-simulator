@@ -171,7 +171,7 @@
         <div style="font-size: 15px; color: #a4b0be; text-align: left; background: rgba(255,255,255,0.05); padding: 15px 25px; border-radius: 8px; border-left: 4px solid var(--primary); line-height: 1.6; max-width: 320px;">
             <span style="color:#fff; font-weight:bold;">[操作]</span> 點擊遊戲畫面任一處即可移動。<br>
             <span style="color:#fff; font-weight:bold;">[提示]</span> 每走 8 步會扣 1 點體力(HP)。<br>
-            <span style="color:var(--warning); font-weight:bold;">[隱藏考核]</span> 對話選擇將決定結營評價！
+            <span style="color:var(--warning); font-weight:bold;">[隱藏考核]</span> 對話選擇將決定下營評價！
         </div>
         <button class="btn-action" onclick="startGame()">進入遊戲</button>
     </div>
@@ -221,17 +221,72 @@
     let stepCount = 0; 
     let floatingTexts = [];
 
+   // --- 像素材質 (V3.0 立體程序化生成) ---
     const textures = {};
     function initTextures() {
-        const wood = document.createElement('canvas'); wood.width = TILE_SIZE; wood.height = TILE_SIZE; const wCtx = wood.getContext('2d');
-        wCtx.fillStyle = '#2c1e16'; wCtx.fillRect(0,0,TILE_SIZE,TILE_SIZE); 
-        wCtx.fillStyle = '#3a271d'; wCtx.fillRect(2,2,TILE_SIZE-4,TILE_SIZE-4);
-        wCtx.fillStyle = '#4a3326'; wCtx.fillRect(6,6,TILE_SIZE-12,TILE_SIZE-12);
+        // 🪵 【木地板材質】 (拼接木板與立體陰影)
+        const wood = document.createElement('canvas'); 
+        wood.width = TILE_SIZE; 
+        wood.height = TILE_SIZE; 
+        const wCtx = wood.getContext('2d');
+        
+        // 1. 底色 (深棕色接縫)
+        wCtx.fillStyle = '#2c1e16'; 
+        wCtx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+        
+        // 2. 畫出兩塊主要木板
+        wCtx.fillStyle = '#5d4037'; // 亮木色
+        wCtx.fillRect(0, 0, TILE_SIZE, TILE_SIZE/2 - 2);       // 上半部木板
+        wCtx.fillRect(0, TILE_SIZE/2, TILE_SIZE, TILE_SIZE/2 - 2); // 下半部木板
+        
+        // 3. 隨機木紋細節 (橫向條紋)
+        wCtx.fillStyle = '#4e342e';
+        for(let i = 0; i < 15; i++) {
+            let wx = Math.random() * TILE_SIZE;
+            let wy = Math.random() * TILE_SIZE;
+            let wWidth = Math.random() * 15 + 5;
+            wCtx.fillRect(wx, wy, wWidth, 2);
+        }
+
+        // 4. 木板邊緣高光與陰影 (打造 3D 立體感)
+        wCtx.fillStyle = 'rgba(255, 255, 255, 0.1)'; // 頂部高光
+        wCtx.fillRect(0, 0, TILE_SIZE, 2);
+        wCtx.fillRect(0, TILE_SIZE/2, TILE_SIZE, 2);
+        
+        wCtx.fillStyle = 'rgba(0, 0, 0, 0.4)'; // 底部與右側陰影
+        wCtx.fillRect(0, TILE_SIZE/2 - 4, TILE_SIZE, 2);
+        wCtx.fillRect(0, TILE_SIZE - 4, TILE_SIZE, 2);
+        wCtx.fillRect(TILE_SIZE - 2, 0, 2, TILE_SIZE); 
+
         textures.wood = ctx.createPattern(wood, 'repeat');
 
-        const grass = document.createElement('canvas'); grass.width = TILE_SIZE; grass.height = TILE_SIZE; const gCtx = grass.getContext('2d');
-        gCtx.fillStyle = '#1e3814'; gCtx.fillRect(0,0,TILE_SIZE,TILE_SIZE);
-        gCtx.fillStyle = '#2c521d'; gCtx.fillRect(4,4,10,10); gCtx.fillRect(24,18,12,12); gCtx.fillRect(10,30,8,8);
+        // 🌿 【草地材質】 (多層次像素草皮)
+        const grass = document.createElement('canvas'); 
+        grass.width = TILE_SIZE; 
+        grass.height = TILE_SIZE; 
+        const gCtx = grass.getContext('2d');
+        
+        // 1. 底色 (暗綠色泥土底)
+        gCtx.fillStyle = '#1e3814'; 
+        gCtx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+        
+        // 2. 程序化雜訊生成草皮 (三種層次的綠色交疊)
+        const greens = ['#2c521d', '#3a6b25', '#4b8231'];
+        for(let i = 0; i < 45; i++) {
+            let gx = Math.floor(Math.random() * (TILE_SIZE / 2)) * 2; // 保持像素邊緣銳利
+            let gy = Math.floor(Math.random() * (TILE_SIZE / 2)) * 2;
+            let gWidth = (Math.random() > 0.5) ? 2 : 4;
+            let gHeight = (Math.random() > 0.5) ? 4 : 8;
+            
+            gCtx.fillStyle = greens[Math.floor(Math.random() * greens.length)];
+            gCtx.fillRect(gx, gy, gWidth, gHeight);
+        }
+
+        // 3. 點綴晨露或小亮點
+        gCtx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        gCtx.fillRect(Math.random() * TILE_SIZE, Math.random() * TILE_SIZE, 2, 2);
+        gCtx.fillRect(Math.random() * TILE_SIZE, Math.random() * TILE_SIZE, 2, 2);
+
         textures.grass = ctx.createPattern(grass, 'repeat');
     }
     initTextures();
@@ -250,10 +305,10 @@
             portal: { x: 8, y: 9, icon: '🚪', toScene: 'outdoor', toX: 8, toY: 1 },
             npcs: [
                 { 
-                    x: 8, y: 1, icon: '👨‍🏫', title: '講師', name: '瓜瓜', canMove: false, 
+                    x: 8, y: 1, icon: '👨‍🏫', title: '講者', name: '瓜瓜', canMove: false, 
                     msgs: [
                         '為什麼還安靜不下來？', '請各位隊輔幫我管秩序！',
-                        { question: '講師正在生氣，你要如何應對？', 
+                        { question: '講者正在生氣，你要如何應對？', 
                           choices: [
                             { text: '立刻協助安撫學員', moodChange: -1, hiddenScore: 1, reply: '謝謝，終於安靜一點了。(獲得肯定)' },
                             { text: '滑手機不管他', moodChange: -3, hiddenScore: -1, reply: '那位隊輔！不要滑手機了！(心情大傷 -3)' }
@@ -398,7 +453,7 @@
             if (isGameOver || !isGameStarted || isDialogActive) return; 
             remainingTime--; updateTimerUI();
             
-            if (remainingTime === 10) logSystem("[警告] 距離結營只剩 10 秒！", "damage");
+            if (remainingTime === 10) logSystem("[警告] 距離下營只剩 10 秒！", "damage");
             if (remainingTime <= 0) triggerGameOver("timeup");
         }, 1000);
     }
@@ -438,7 +493,7 @@
         
         if (reason === "timeup") {
             icon.innerText = '⏳'; title.innerText = '任務超時'; title.style.color = 'var(--warning)';
-            desc.innerHTML = '動作太慢了，營隊大混亂，進度嚴重落後...<br>結營檢討會被電爆了。';
+            desc.innerHTML = '動作太慢了，營隊大混亂，進度嚴重落後...<br>檢討會被電爆了。';
         } else {
             icon.innerText = '💀'; title.innerText = '體力耗盡'; title.style.color = 'var(--danger)';
             desc.innerHTML = '小學員暴走、進度落後，你累癱在營隊中。<br>無法繼續勝任隊輔工作。';
@@ -457,7 +512,7 @@
             icon.innerText = '🏆'; title.innerText = '傳說級隊輔！'; title.style.color = 'var(--warning)';
             desc.innerHTML = `隱藏考核分數：<span style="color:var(--warning);font-size:24px;">${currentHiddenScore}/${MAX_HIDDEN_SCORE}</span><br><br>你成功解決了所有危機，而且處事非常成熟！大家都覺得你是一位超級優秀的隊輔！`;
         } else {
-            icon.innerText = '😅'; title.innerText = '勉強結營...'; title.style.color = '#a4b0be';
+            icon.innerText = '😅'; title.innerText = '勉強下營...'; title.style.color = '#a4b0be';
             desc.innerHTML = `隱藏考核分數：<span style="color:var(--danger);font-size:24px;">${currentHiddenScore}/${MAX_HIDDEN_SCORE}</span><br><br>雖然撐過了營隊，但處理危機的方式太過急躁。下次再多點耐心吧！`;
         }
         overlay.style.display = 'flex'; logSystem("[系統] 任務完成，正在結算成績...", "heal");
