@@ -90,6 +90,18 @@
     .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
     @keyframes shake { 10%, 90% { transform: translate3d(-3px, 0, 0); } 20%, 80% { transform: translate3d(5px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
 
+    /* 排行榜面板 */
+    #leaderboard {
+        display: none; margin-top: 15px; width: 90%; max-width: 320px;
+        background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px;
+        border: 1px solid var(--warning); box-sizing: border-box; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+    .leaderboard-row {
+        display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 6px; margin-bottom: 6px; font-size: 14px;
+    }
+    .leaderboard-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
     /* ================= 📱 手機版排版優化 ================= */
     @media (max-width: 768px) {
         #hud-container { padding: 10px 5px; }
@@ -105,9 +117,11 @@
         #start-screen-overlay div:nth-child(1) { font-size: 50px!important; margin-bottom: 5px!important; }
         #start-screen-overlay div:nth-child(2) { font-size: 28px!important; margin-bottom: 10px!important; }
         #start-screen-overlay div:nth-child(3) { font-size: 14px!important; padding: 15px!important; width: 85%; line-height: 1.6!important;}
+        
+        #ending-icon { font-size: 50px!important; margin-bottom: 5px!important; }
+        #ending-title { font-size: 30px!important; margin-bottom: 10px!important; }
+        #ending-desc { font-size: 14px!important; padding: 0 10px; }
         .btn-action { font-size: 18px; padding: 12px 30px; margin-top: 15px; }
-        #ending-title { font-size: 32px!important; }
-        #ending-desc { font-size: 15px!important; padding: 0 15px; }
     }
 </style>
 </head>
@@ -172,6 +186,13 @@
         <div id="ending-icon" style="font-size: 60px; margin-bottom: 15px;"></div>
         <div id="ending-title" style="font-size: 40px; margin-bottom: 15px; font-weight: 900;"></div>
         <div id="ending-desc" style="font-size: 16px; color: #dfe4ea; line-height: 1.6; max-width: 400px; padding: 0 20px;"></div>
+        
+        <!-- 🏆 排行榜容器 -->
+        <div id="leaderboard">
+            <div style="color: var(--warning); font-weight: 900; margin-bottom: 10px; font-size: 16px; letter-spacing: 1px;">🏆 最速通關排行榜</div>
+            <div id="leaderboard-list" style="text-align: left; font-size: 14px;"></div>
+        </div>
+
         <button class="btn-action" onclick="restartGame()">重新連線</button>
     </div>
 </div>
@@ -180,7 +201,6 @@
     // ==========================================
     // 🖼️ 【真實圖片素材庫 (修正 CORS 與尺寸限制)】
     // ==========================================
-    // 這裡我換成了風格精緻一致的 Twemoji 與高清 Unsplash 紋理
     const ASSET_URLS = {
         floor_wood: 'https://images.unsplash.com/photo-1546484396-fb3fc6f95f98?w=200&h=200&fit=crop', // 木紋地板
         floor_grass: 'https://images.unsplash.com/photo-1533460004989-acf295ce70eb?w=200&h=200&fit=crop', // 草地
@@ -202,12 +222,10 @@
     const images = {};
     for (let key in ASSET_URLS) {
         images[key] = new Image();
-        // 💡 終極防禦：加入跨域允許，打破 Canvas 阻擋圖片渲染的限制！
         images[key].crossOrigin = "Anonymous"; 
         images[key].src = ASSET_URLS[key];
     }
 
-    // 當玩家頭像載入完成，立刻更新左上角的 HUD
     images['player'].onload = function() {
         const avatarEmoji = document.getElementById('avatar-emoji');
         const avatarImg = document.getElementById('avatar-img');
@@ -256,7 +274,6 @@
     let stepCount = 0; 
     let floatingTexts = [];
 
-    // --- 像素材質 (防破圖備用) ---
     const textures = {};
     function initTextures() {
         const wood = document.createElement('canvas'); wood.width = TILE_SIZE; wood.height = TILE_SIZE; const wCtx = wood.getContext('2d');
@@ -272,9 +289,6 @@
     }
     initTextures();
 
-    // ==========================================
-    // 📖 劇本與地圖資料
-    // ==========================================
     const scenes = {
         classroom: {
             type: 'wood',
@@ -411,6 +425,46 @@
         }
     }
 
+    // ==========================================
+    // 🏆 【全球連線排行榜系統 (Google Sheets)】
+    // ==========================================
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxFVE6pt6QhRL6_mHvMoUnS84wKcfTwEqiotoUNi8DrA_WdZvJR0dVLkXs4FmhvwLlp/exec';
+
+    function showLeaderboard(timeUsed) {
+        // 顯示上傳中的提示
+        document.getElementById('leaderboard-list').innerHTML = '<div style="text-align:center; padding: 10px; color:#fff;">📡 分數上傳中...</div>';
+        document.getElementById('leaderboard').style.display = 'block';
+
+        // 延遲一下讓畫面先渲染，再跳出輸入框
+        setTimeout(() => {
+            let playerName = prompt("🎉 恭喜通關！\n請輸入你的大名留存紀錄：") || "無名隊輔";
+            
+            // 將分數發送到 Google 試算表
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ name: playerName, time: timeUsed })
+            })
+            .then(res => res.json())
+            .then(board => {
+                // 收到試算表回傳的最新前五名，更新畫面
+                let listHTML = '';
+                board.forEach((entry, index) => {
+                    let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
+                    listHTML += `
+                        <div class="leaderboard-row">
+                            <span>${medal} ${entry.name}</span>
+                            <span style="color: var(--success); font-weight: bold;">${entry.time} 秒</span>
+                        </div>`;
+                });
+                document.getElementById('leaderboard-list').innerHTML = listHTML;
+            })
+            .catch(err => {
+                document.getElementById('leaderboard-list').innerHTML = '<div style="text-align:center; padding: 10px; color:var(--danger);">❌ 連線失敗，無法更新排行榜</div>';
+                console.error("排行榜上傳錯誤:", err);
+            });
+        }, 300);
+    }
+
     function logSystem(msg, type="info") {
         let div = document.createElement('div'); div.className = `chat-msg ${type}`; div.innerText = msg;
         systemChat.appendChild(div);
@@ -492,14 +546,19 @@
         const overlay = document.getElementById('ending-overlay');
         const icon = document.getElementById('ending-icon'); const title = document.getElementById('ending-title'); const desc = document.getElementById('ending-desc');
         
+        const timeUsed = GAME_TIME_SECONDS - remainingTime;
+
         if (currentHiddenScore >= (MAX_HIDDEN_SCORE / 2)) {
             icon.innerText = '🏆'; title.innerText = '傳說級隊輔！'; title.style.color = 'var(--warning)';
-            desc.innerHTML = `隱藏考核分數：<span style="color:var(--warning);font-size:24px;">${currentHiddenScore}/${MAX_HIDDEN_SCORE}</span><br><br>你成功解決了所有危機，而且處事非常成熟！大家都覺得你是一位超級優秀的隊輔！`;
+            desc.innerHTML = `通關時間：<span style="color:var(--success); font-weight:bold;">${timeUsed} 秒</span><br>隱藏考核：<span style="color:var(--warning);">${currentHiddenScore}/${MAX_HIDDEN_SCORE}</span><br>你成功解決了所有危機，而且處事非常成熟！大家都覺得你是一位超級優秀的隊輔！`;
         } else {
             icon.innerText = '😅'; title.innerText = '勉強結營...'; title.style.color = '#a4b0be';
-            desc.innerHTML = `隱藏考核分數：<span style="color:var(--danger);font-size:24px;">${currentHiddenScore}/${MAX_HIDDEN_SCORE}</span><br><br>雖然撐過了營隊，但處理危機的方式太過急躁。下次再多點耐心吧！`;
+            desc.innerHTML = `通關時間：<span style="color:var(--success); font-weight:bold;">${timeUsed} 秒</span><br>隱藏考核：<span style="color:var(--danger);">${currentHiddenScore}/${MAX_HIDDEN_SCORE}</span><br>雖然撐過了營隊，但處理危機的方式太過急躁。下次再多點耐心吧！`;
         }
         overlay.style.display = 'flex'; logSystem("[系統] 任務完成，正在結算成績...", "heal");
+
+        // 💡 呼叫排行榜函數
+        showLeaderboard(timeUsed);
     }
 
     function updateQuestUI() { document.getElementById('quest-progress').innerText = `${talkedTo.size}/${QUEST_GOAL}`; }
@@ -507,6 +566,7 @@
     function restartGame() {
         currentMood = MAX_MOOD; stepCount = 0; talkedTo.clear(); currentHiddenScore = MAX_HIDDEN_SCORE; remainingTime = GAME_TIME_SECONDS; 
         document.getElementById('timer-display').style.color = '#fff';
+        document.getElementById('leaderboard').style.display = 'none';
         
         updateQuestUI(); updateMoodUI(); floatingTexts = []; currentScene = 'classroom'; 
         player.gridX = 7; player.gridY = 7; player.pixelX = 7*TILE_SIZE; player.pixelY = 7*TILE_SIZE; player.facing = 'down';
@@ -680,7 +740,6 @@
         ctx.fillStyle = isPlayer ? '#1dd1a1' : '#ffffff'; ctx.fillText(name, px, py - 3);
     }
 
-    // 💡 繪製真實圖片邏輯
     function drawGraphic(imgKey, icon, px, py, tilesW = 1, tilesH = 1) {
         if (imgKey && images[imgKey] && images[imgKey].complete && images[imgKey].naturalWidth > 0) {
             let imgW = tilesW * TILE_SIZE; let imgH = tilesH * TILE_SIZE;
@@ -721,7 +780,6 @@
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // 💡 繪製高畫質地板
         for(let r = 0; r < ROWS; r++) {
             for(let c = 0; c < COLS; c++) {
                 let floorKey = scene.type === 'grass' ? 'floor_grass' : 'floor_wood';
