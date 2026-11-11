@@ -55,10 +55,10 @@
     #hp-bar-bg { width: 100%; height: 12px; background: rgba(0,0,0,0.6); border-radius: 6px; overflow: hidden; border: 1px solid #333;}
     #hp-bar { height: 100%; width: 100%; background: var(--success); transition: width 0.3s, background 0.3s; box-shadow: inset 0 0 5px rgba(255,255,255,0.5);}
 
-    #hud-quest { padding: 15px; min-width: 200px; }
+    #hud-quest { padding: 15px; min-width: 215px; }
     .quest-title { font-size: 14px; color: var(--warning); font-weight: 900; margin-bottom: 10px; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 5px; letter-spacing: 1px;}
-    .quest-item { font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between;}
-    #timer-display { font-size: 18px; font-weight: 900; color: #fff; text-align: center; margin-top: 10px; text-shadow: 0 0 8px rgba(255,255,255,0.5);}
+    .quest-item { font-size: 13px; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 10px;}
+    #timer-display { font-size: 18px; font-weight: 900; color: #fff; text-align: center; margin-top: 8px; text-shadow: 0 0 8px rgba(255,255,255,0.5);}
 
     #hud-chat { position: absolute; bottom: env(safe-area-inset-bottom, 20px); left: 20px; padding: 10px; width: 280px; height: 150px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; border: none; background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%); box-shadow: none; z-index: 10; pointer-events: none;}
     .chat-msg { font-size: 13px; margin-top: 4px; animation: slideIn 0.3s ease forwards; text-shadow: 1px 1px 2px #000; font-weight: bold;}
@@ -141,7 +141,7 @@
     @media (max-width: 768px) {
         #hud-container { padding: 10px 5px; }
         #hud-player { top: max(15px, env(safe-area-inset-top)); left: 15px; transform: scale(0.9); transform-origin: top left; }
-        #hud-quest { top: max(85px, calc(env(safe-area-inset-top) + 70px)); left: 15px; right: auto; transform: scale(0.9); transform-origin: top left; padding: 12px; min-width: 150px; }
+        #hud-quest { top: max(85px, calc(env(safe-area-inset-top) + 70px)); left: 15px; right: auto; transform: scale(0.9); transform-origin: top left; padding: 12px; min-width: 170px; }
         #hud-chat { display: none; } 
         
         #dialog-box { padding: 18px; bottom: max(20px, env(safe-area-inset-bottom)); }
@@ -179,8 +179,9 @@
 
         <div id="hud-quest" class="hud-panel">
             <div class="quest-title">📜 主線任務：營隊危機</div>
-            <div class="quest-item"><span>安撫學員與幹部</span> <span id="quest-progress">0/8</span></div>
-            <div id="timer-display">⏱️ 80 秒</div>
+            <div class="quest-item"><span>💬 安撫學員與幹部</span> <span id="quest-progress">0/12</span></div>
+            <div class="quest-item"><span>🎒 尋回遺失的物資</span> <span id="supply-progress">0/3</span></div>
+            <div id="timer-display">⏱️ 0 秒</div>
         </div>
     </div>
 
@@ -271,6 +272,8 @@
         npc_boy: 'https://api.iconify.design/twemoji/boy.svg?width=128&height=128', 
         npc_girl: 'https://api.iconify.design/twemoji/girl.svg?width=128&height=128', 
         npc_man: 'https://api.iconify.design/twemoji/man-student.svg?width=128&height=128', 
+        npc_woman: 'https://api.iconify.design/twemoji/woman-student.svg?width=128&height=128',
+        npc_chef: 'https://api.iconify.design/twemoji/man-cook.svg?width=128&height=128',
         chair: 'https://api.iconify.design/twemoji/chair.svg?width=128&height=128', 
         tree_big: 'https://api.iconify.design/twemoji/deciduous-tree.svg?width=128&height=128', 
         tree_small: 'https://api.iconify.design/twemoji/evergreen-tree.svg?width=128&height=128', 
@@ -278,7 +281,10 @@
         door: 'https://api.iconify.design/twemoji/door.svg?width=128&height=128', 
         candy: 'https://api.iconify.design/twemoji/candy.svg?width=128&height=128', 
         boba: 'https://api.iconify.design/twemoji/bubble-tea.svg?width=128&height=128', 
-        banana: 'https://api.iconify.design/twemoji/banana.svg?width=128&height=128' 
+        banana: 'https://api.iconify.design/twemoji/banana.svg?width=128&height=128',
+        clipboard: 'https://api.iconify.design/twemoji/clipboard.svg?width=128&height=128',
+        megaphone: 'https://api.iconify.design/twemoji/cheering-megaphone.svg?width=128&height=128',
+        flag: 'https://api.iconify.design/twemoji/triangular-flag.svg?width=128&height=128'
     };
 
     const images = {};
@@ -303,7 +309,7 @@
     // ==========================================
     const CLASSES = {
         athletic: {
-            name: '體能狂人', titlePrefix: '體能狂',
+            name: '體能怪物', titlePrefix: '體能狂',
             maxMood: 15, speed: 0.38, walkStepsCost: 99999, // 走路不扣體力
             wrongPenalty: -1, bonusHiddenScore: 0, showHint: false, luckyCrisis: false
         },
@@ -313,7 +319,7 @@
             wrongPenalty: 0, bonusHiddenScore: 0, showHint: true, luckyCrisis: false
         },
         lucky: {
-            name: '天選佛系', titlePrefix: '佛系',
+            name: '佛系隊輔', titlePrefix: '佛系',
             maxMood: 12, speed: 0.25, walkStepsCost: 8,
             wrongPenalty: 0, bonusHiddenScore: 1, showHint: false, luckyCrisis: true
         }
@@ -327,47 +333,39 @@
     }
 
     // ==========================================
-    // 🚨 【隨機動態突發危機題庫】
+    // 🚨 【隨機動態突發危機題庫】(正計時版：負數代表省時獎勵，正數代表罰時)
     // ==========================================
     const CRISIS_POOL = [
         {
             title: '🚨 突發危機：便當送錯了！',
-            question: '廠商把素食便當送成排骨便當，吃素的幹部快餓昏了，你該怎麼辦？',
+            question: '廠商把素食便當送成魚排便當，海鮮過敏的學員快餓昏了，你該怎麼辦？',
             choices: [
-                { text: '把自己的蔬食沙拉讓給他吃', moodChange: -2, timeChange: 0, hiddenScore: 1, reply: '幹部感動到痛哭流涕！(體力 -2，隱藏考核 +1)' },
-                { text: '裝作沒看到，先吃自己的雞腿', moodChange: 1, timeChange: -5, hiddenScore: -1, reply: '現場為了找便當亂成一團！(體力 +1，時間 -5秒，考核 -1)' }
+                { text: '假裝沒看到，吃一下沒關係', moodChange: 1, timePenalty: 5, hiddenScore: -1, reply: '學員全身發癢，送急診 (體力 +1，耗時 +5秒，考核 -1)' },
+                { text: '先拿餅乾給他吃', moodChange: -2, timePenalty: 0, hiddenScore: 1, best: true, reply: '學員感動到痛哭流涕！(體力 -2，隱藏考核 +1)' }
             ]
         },
         {
             title: '🚨 突發危機：午後大雷雨！',
             question: '外面突然下起狂風暴雨，走廊上的大地遊戲道具快被淋濕了！',
             choices: [
-                { text: '衝進雨中搶救道具與器材', moodChange: -2, timeChange: 3, hiddenScore: 1, reply: '全身淋濕但保住了器材，進度超前！(體力 -2，時間 +3秒，考核 +1)' },
-                { text: '站在屋簷下指揮學員去收', moodChange: 0, timeChange: -5, hiddenScore: -1, reply: '學員越收越亂，還差點滑倒！(時間 -5秒，考核 -1)' }
+                { text: '站在屋簷下指揮學員去收', moodChange: 0, timePenalty: 5, hiddenScore: -1, reply: '學員越收越亂，還差點滑倒！(耗時 +5秒，考核 -1)' },
+                { text: '安頓好學員，並立刻搶救道具與器材', moodChange: -2, timePenalty: -3, hiddenScore: 1, best: true, reply: '全身淋濕但保住了器材！(體力 -2，耗時 -3秒，考核 +1)' }
             ]
         },
         {
             title: '🚨 突發危機：音控設備大爆音！',
             question: '教室麥克風突然發出刺耳尖叫聲，全場學員摀著耳朵開始躁動！',
             choices: [
-                { text: '立刻衝上台無麥克風帶動唱', moodChange: -2, timeChange: 4, hiddenScore: 1, reply: '氣氛瞬間嗨翻，成功化解尷尬！(體力 -2，時間 +4秒，考核 +1)' },
-                { text: '在台下跟著一起摀耳朵乾瞪眼', moodChange: -1, timeChange: -4, hiddenScore: -1, reply: '場面尷尬冷場了好幾分鐘...(體力 -1，時間 -4秒，考核 -1)' }
+                { text: '在設備處理期間安撫學員情緒', moodChange: -2, timePenalty: -4, hiddenScore: 1, best: true, reply: '學員雖然感到不適，但你的用心他們感受到了！(體力 -1，耗時 -4秒，考核 +1)' },
+                { text: '在台下跟著一起摀耳朵乾瞪眼', moodChange: -1, timePenalty: 4, hiddenScore: -1, reply: '場面尷尬冷場了好幾分鐘...(體力 -1，耗時 +4秒，考核 -1)' }
             ]
         },
         {
-            title: '🚨 突發危機：恐龍家長來電！',
-            question: '學員媽媽打電話來抱怨：「為什麼我家寶貝照片看起來沒笑？！」',
+            title: '🚨 突發危機：學員吐了！',
+            question: '有學員吃飽亂跑突然臉色發白，眼看就要吐在地板上了！',
             choices: [
-                { text: '溫柔安撫家長並馬上補拍燦笑照', moodChange: -2, timeChange: -2, hiddenScore: 1, reply: '家長終於滿意地掛上電話。(體力 -2，時間 -2秒，考核 +1)' },
-                { text: '假裝營區收訊不好直接秒掛斷', moodChange: 0, timeChange: 0, hiddenScore: -2, reply: '家長直接打給值星官投訴你！(考核 -2)' }
-            ]
-        },
-        {
-            title: '🚨 突發危機：學員喝珍奶吐了！',
-            question: '有學員喝太快突然臉色發白，眼看就要吐在地板上了！',
-            choices: [
-                { text: '眼明手快拿塑膠袋衝過去接住', moodChange: -2, timeChange: 2, hiddenScore: 1, reply: '神級反應！地板逃過一劫！(體力 -2，時間 +2秒，考核 +1)' },
-                { text: '大叫一聲跳開三公尺遠', moodChange: -1, timeChange: -6, hiddenScore: -1, reply: '地板慘不忍睹，花超多時間清理...(體力 -1，時間 -6秒，考核 -1)' }
+                { text: '開始尖叫亂跑', moodChange: -1, timePenalty: 6, hiddenScore: -1, reply: '地板慘不忍睹，花超多時間清理...(體力 -1，耗時 +6秒，考核 -1)' },
+                { text: '冷靜地到廁所拿拖把抹布處理乾淨', moodChange: -2, timePenalty: -2, hiddenScore: 1, best: true, reply: '滿分反應！(體力 -2，耗時 -2秒，考核 +1)' }
             ]
         }
     ];
@@ -375,16 +373,16 @@
     let usedCrisisIndices = new Set();
 
     // ==========================================
-    // ⚙️ 核心設定 
+    // ⚙️ 核心設定 (正計時與雙主線任務)
     // ==========================================
-    const GAME_TIME_SECONDS = 80; 
-    let remainingTime = GAME_TIME_SECONDS;
+    let elapsedTime = 0; // 正計時秒數 (從 0 開始)
+    const MAX_OVERTIME_SECONDS = 180; // 超過 180 秒判定超時失敗
     let timerInterval = null; 
     let finalTimeUsed = 0; 
     let currentTitleTag = '【隊輔】';
 
-    const MAX_HIDDEN_SCORE = 7;
-    let currentHiddenScore = MAX_HIDDEN_SCORE;
+    const BASE_HIDDEN_SCORE = 10;
+    let currentHiddenScore = BASE_HIDDEN_SCORE;
 
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -396,7 +394,7 @@
     const COLS = 16; 
     const ROWS = 10;
     
-    let player = { gridX: 7, gridY: 7, pixelX: 7*TILE_SIZE, pixelY: 7*TILE_SIZE, icon: '🧚‍♀️', imgKey: 'player', facing: 'down' };
+    let player = { gridX: 7, gridY: 5, pixelX: 7*TILE_SIZE, pixelY: 5*TILE_SIZE, icon: '🧚‍♀️', imgKey: 'player', facing: 'down' };
     let currentScene = 'classroom';
     
     let isGameStarted = false; 
@@ -405,9 +403,14 @@
     let currentDialogNPC = null; 
     let currentDialogIndex = 0;  
     
+    // 任務 1：安撫 12 位 NPC
     let talkedTo = new Set();
-    const requiredNPCs = ['小明', '小偉', '大華', '小美', '總籌', '邱曉昕', '副籌', '瓜瓜'];
+    const requiredNPCs = ['小明', '小偉', '大華', '小美', '小安', '阿哲', '瓜瓜', '總籌', '副籌', '邱曉昕', '美宣長', '伙食組'];
     const QUEST_GOAL = requiredNPCs.length;
+
+    // 任務 2：尋回 3 個遺失的營隊物資
+    let collectedSupplies = 0;
+    const SUPPLY_GOAL = 3;
 
     let currentMaxMood = 15; 
     let currentMood = 15;
@@ -429,6 +432,9 @@
     }
     initTextures();
 
+    // ==========================================
+    // 📖 擴充版劇本與地圖資料 (選項已調換 + 新增人物與任務物資)
+    // ==========================================
     const scenes = {
         classroom: {
             type: 'wood',
@@ -438,7 +444,9 @@
             ],
             items: [
                 { x: 14, y: 2, icon: '🍬', imgKey: 'candy', name: '潤喉糖', heal: 2, picked: false },
-                { x: 2, y: 8, icon: '🍬', imgKey: 'candy', name: '潤喉糖', heal: 2, picked: false }
+                { x: 2, y: 8, icon: '🍬', imgKey: 'candy', name: '潤喉糖', heal: 2, picked: false },
+                { x: 1, y: 1, icon: '📋', imgKey: 'clipboard', name: '小隊點名單', heal: 1, isSupply: true, picked: false },
+                { x: 14, y: 8, icon: '📢', imgKey: 'megaphone', name: '值星大聲公', heal: 1, isSupply: true, picked: false }
             ],
             portal: { x: 8, y: 9, icon: '🚪', imgKey: 'door', toScene: 'outdoor', toX: 8, toY: 1 },
             npcs: [
@@ -448,8 +456,8 @@
                         '為什麼還安靜不下來？', '請各位隊輔幫我管秩序！',
                         { question: '講師正在生氣，你要如何應對？', 
                           choices: [
-                            { text: '立刻協助安撫學員', moodChange: -1, hiddenScore: 1, best: true, reply: '謝謝，終於安靜一點了。(獲得肯定)' },
-                            { text: '滑手機不管他', moodChange: -3, hiddenScore: -1, reply: '那位隊輔！不要滑手機了！(心情大傷)' }
+                            { text: '滑手機不管他', moodChange: -3, hiddenScore: -1, reply: '那位隊輔！不要滑手機了！(心情大傷)' },
+                            { text: '立刻協助安撫學員', moodChange: -1, hiddenScore: 1, best: true, reply: '謝謝，終於安靜一點了。(獲得肯定)' }
                           ] 
                         }
                     ], moodChange: 0 
@@ -460,8 +468,8 @@
                         '好無聊喔我要出去打球...', '我聽不懂啦...',
                         { question: '小明不想上課，你要怎麼回應？', 
                           choices: [
-                            { text: '堅定安撫並陪他', moodChange: 0, hiddenScore: 0, best: true, reply: '好啦...既然你願意陪我，我就聽。' },
-                            { text: '大聲喝斥他安靜', moodChange: -3, hiddenScore: -1, reply: '凶屁凶！(小明大哭，身心俱疲)' }
+                            { text: '大聲喝斥他安靜', moodChange: -3, hiddenScore: -1, reply: '凶屁凶！(小明大哭，身心俱疲)' },
+                            { text: '堅定安撫並陪他', moodChange: 0, hiddenScore: 0, best: true, reply: '好啦...既然你願意陪我，我就聽。' }
                           ] 
                         }
                     ] 
@@ -484,8 +492,8 @@
                         '老師你不要管我', '幹嘛管這麼多...',
                         { question: '大華正在到處亂跑，你要怎麼做？',
                           choices: [
-                            { text: '先讓他冷靜，說明規定', moodChange: 0, hiddenScore: 0, best: true, reply: '好吧。(大華安靜了下來)' },
-                            { text: '讓他原地罰站', moodChange: -4, hiddenScore: -1, reply: '我不要！(大華跑走，場面失控)' }
+                            { text: '讓他原地罰站', moodChange: -4, hiddenScore: -1, reply: '我不要！(大華跑走，場面失控)' },
+                            { text: '先讓他冷靜，說明規定', moodChange: 0, hiddenScore: 0, best: true, reply: '好吧。(大華安靜了下來)' }
                           ]
                         }
                     ] 
@@ -496,8 +504,32 @@
                         '小明好吵喔...', '老師你可以叫他出去嗎？',
                         { question: '小美被影響了，你要怎麼辦？',
                           choices: [
-                            { text: '告訴他你會去提醒小明', moodChange: 0, hiddenScore: 0, best: true, reply: '好，謝謝老師。' },
-                            { text: '跟他說再忍耐一下', moodChange: -2, hiddenScore: -1, reply: '不管啦我要回家！(受到影響)' }
+                            { text: '跟他說再忍耐一下', moodChange: -2, hiddenScore: -1, reply: '不管啦我要回家！(受到影響)' },
+                            { text: '告訴他你會去提醒小明', moodChange: 0, hiddenScore: 0, best: true, reply: '好，謝謝老師。' }
+                          ]
+                        }
+                    ] 
+                },
+                { 
+                    x: 5, y: 5, icon: '👧', imgKey: 'npc_girl', title: '學員', name: '小安', canMove: false,
+                    msgs: [
+                        '嗚嗚嗚...我想媽媽...', '我現在想要回家...',
+                        { question: '小安突然想家哭了起來，你該怎麼辦？',
+                          choices: [
+                            { text: '跟他說大家都在看你喔', moodChange: -3, hiddenScore: -1, reply: '嗚哇哇哇！(哭得更大聲了，心情 -3)' },
+                            { text: '遞給他衛生紙，陪他在旁邊平復心情', moodChange: -1, hiddenScore: 1, best: true, reply: '吸吸鼻子...我心情好了，我去找大家一起玩。(破涕為笑)' }
+                          ]
+                        }
+                    ] 
+                },
+                { 
+                    x: 13, y: 5, icon: '👦', imgKey: 'npc_boy', title: '學員', name: '阿哲', canMove: true,
+                    msgs: [
+                        '嘿嘿，老師你看我！', '我把彩色筆塗滿整個臉了！',
+                        { question: '阿哲正在把彩色筆往桌上跟臉上抹，你要？',
+                          choices: [
+                            { text: '趕快抓他去洗臉，並幫他擦乾淨', moodChange: -1, hiddenScore: 1, best: true, reply: '謝謝老師！(危機解除)' },
+                            { text: '崩潰大叫叫他不准動', moodChange: -3, hiddenScore: -1, reply: '阿哲嚇一跳直接拿你的衣服來擦！(衣服全毀 心情 -3)' }
                           ]
                         }
                     ] 
@@ -512,8 +544,9 @@
             ],
             items: [
                 { x: 14, y: 8, icon: '🧋', imgKey: 'boba', name: '珍奶', heal: 5, picked: false },
-                { x: 2, y: 5, icon: '🧋', imgKey: 'boba', name: '珍奶', heal: 5, picked: false },
-                { x: 8, y: 5, icon: '🍌', imgKey: 'banana', name: '香蕉皮', heal: -2, picked: false }
+                { x: 1, y: 8, icon: '🧋', imgKey: 'boba', name: '珍奶', heal: 5, picked: false },
+                { x: 8, y: 5, icon: '🍌', imgKey: 'banana', name: '香蕉皮', heal: -2, picked: false },
+                { x: 14, y: 1, icon: '🚩', imgKey: 'flag', name: '傳說小隊旗', heal: 1, isSupply: true, picked: false }
             ],
             portal: { x: 8, y: 0, icon: '🚪', imgKey: 'door', toScene: 'classroom', toX: 8, toY: 8 },
             npcs: [
@@ -523,8 +556,8 @@
                         '大地跑跑馬上要開始了！', '為什麼還在場佈？？？',
                         { question: '總籌正在焦慮，你要如何回應？',
                           choices: [
-                            { text: '捲起袖子一起加快場佈', moodChange: -1, hiddenScore: 0, best: true, reply: '快點快點！(體力消耗 心情 -1)' },
-                            { text: '不知道怎麼辦', moodChange: -4, hiddenScore: -1, reply: '完啦完啦要開天窗了！(慌張)' }
+                            { text: '不知道怎麼辦，在原地發呆', moodChange: -4, hiddenScore: -1, reply: '完啦完啦要開天窗了！(慌張)' },
+                            { text: '捲起袖子一起加快場佈', moodChange: -1, hiddenScore: 0, best: true, reply: '快點快點！(體力消耗 心情 -1)' }
                           ]              
                         }
                     ] 
@@ -535,8 +568,8 @@
                         '你們小隊有小孩在亂跑', '趕快去把他抓回來',
                         { question: '你的回應是？',
                           choices: [
-                            { text: '(立刻跑起來開始找人)', moodChange: -2, hiddenScore: 0, best: true, reply: '成功把人找回來，但你覺得累。(心情 -2)' },
-                            { text: '其他人會負責的', moodChange: -4, hiddenScore: -1, reply: '(被督導發現念了你們一頓)' }
+                            { text: '其他人會負責的', moodChange: -4, hiddenScore: -1, reply: '(被督導發現念了你們一頓)' },
+                            { text: '(立刻跑起來開始找人)', moodChange: -2, hiddenScore: 0, best: true, reply: '成功把人找回來，但你覺得累。(心情 -2)' }
                           ]              
                         }
                     ] 
@@ -547,8 +580,32 @@
                         '我們督導說要請你們開始雨備方案', '你說沒有下雨？',
                         { question: '面對突如其來的指令，你決定？',
                           choices: [
-                            { text: '直接果斷切換雨備', moodChange: -1, hiddenScore: 0, best: true, reply: '好的，大家動起來！(覺得可惜 心情-1)' },
-                            { text: '耐心解釋真的沒下雨', moodChange: -3, hiddenScore: -1, reply: '可是督導說... (溝通無效，心累)' }
+                            { text: '耐心解釋真的沒下雨', moodChange: -3, hiddenScore: -1, reply: '可是督導說... (溝通無效，心累)' },
+                            { text: '直接果斷切換雨備', moodChange: -1, hiddenScore: 0, best: true, reply: '好的，大家動起來！(覺得可惜 心情-1)' }
+                          ]
+                        }
+                    ] 
+                },
+                { 
+                    x: 2, y: 5, icon: '👩‍🎨', imgKey: 'npc_woman', title: '大地跑跑組', name: 'Jimmy', canMove: false, 
+                    msgs: [
+                        '完蛋了！剛剛一陣怪風吹過來！', '我們熬夜畫的關卡海報裂成兩半了！',
+                        { question: 'Jimmy快哭出來了，你該怎麼幫忙？',
+                          choices: [
+                            { text: '拿出隨身雙面膠與膠帶火速急救固定', moodChange: -1, hiddenScore: 1, best: true, reply: '太神啦！完全看不出來破掉過！(獲得感激)' },
+                            { text: '跟他說反正學員不在乎', moodChange: -3, hiddenScore: -1, reply: '那是我熬夜畫三天的心血欸！(Jimmy爆氣 心情 -3)' }
+                          ]
+                        }
+                    ] 
+                },
+                { 
+                    x: 14, y: 4, icon: '👨‍🍳', imgKey: 'npc_chef', title: '幹部', name: '場活股', canMove: true, 
+                    msgs: [
+                        '慘了慘了！我們的晚餐...', '有十份便當餿掉了！隊輔可能要等一下，讓學員先吃',
+                        { question: '晚餐少訂了，你要怎麼處理？',
+                          choices: [
+                            { text: '先搶先贏，學員沒吃關我什麼事', moodChange: -2, hiddenScore: -1, reply: '學員沒吃飽，現場大吵起來！(心情 -2)' },
+                            { text: '接受這件事實，只是晚點吃而已還能忍耐', moodChange: -1, hiddenScore: 1, best: true, reply: '天才主意！學員反而覺得更好喝了！(考核 +1)' }
                           ]
                         }
                     ] 
@@ -563,6 +620,16 @@
             npc.pixelX = npc.x * TILE_SIZE; npc.pixelY = npc.y * TILE_SIZE;
             npc.startX = npc.x; npc.startY = npc.y;
         }
+    }
+
+    // 隨機洗牌陣列工具函數 (確保選項不會固定在同一個位置)
+    function shuffleArray(arr) {
+        let copy = [...arr];
+        for (let i = copy.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
     }
 
     // ==========================================
@@ -609,7 +676,6 @@
     function submitScore() {
         let nameInput = document.getElementById('player-name-input').value.trim();
         let rawName = nameInput === "" ? "無名隊輔" : nameInput;
-        // 冠上解鎖的專屬稱號一起存入雲端排行榜
         let fullPlayerTitleName = `${currentTitleTag}${rawName}`;
         
         document.getElementById('score-submit-area').style.display = 'none';
@@ -648,7 +714,7 @@
         const cls = CLASSES[selectedClassKey];
         currentMaxMood = cls.maxMood;
         currentMood = cls.maxMood;
-        currentHiddenScore = MAX_HIDDEN_SCORE + cls.bonusHiddenScore;
+        currentHiddenScore = BASE_HIDDEN_SCORE + cls.bonusHiddenScore;
         document.getElementById('player-name').innerText = `Lv.99 ${cls.name}`;
         updateMoodUI();
         updateQuestUI();
@@ -658,14 +724,14 @@
         applyClassStats();
         isGameStarted = true;
         document.getElementById('start-screen-overlay').style.display = 'none';
-        logSystem(`[系統] 以「${CLASSES[selectedClassKey].name}」身分開始！`, "system");
+        logSystem(`[系統] 以「${CLASSES[selectedClassKey].name}」身分開始正計時挑戰！`, "system");
         startTimer(); 
     }
 
     function updateTimerUI() {
         const timerDisplay = document.getElementById('timer-display');
-        timerDisplay.innerText = `⏱️ ${remainingTime} 秒`;
-        timerDisplay.style.color = remainingTime <= 10 ? 'var(--danger)' : '#fff';
+        timerDisplay.innerText = `⏱️ ${elapsedTime} 秒`;
+        timerDisplay.style.color = elapsedTime >= 90 ? 'var(--warning)' : '#fff';
     }
 
     function startTimer() {
@@ -673,26 +739,24 @@
         updateTimerUI(); 
         timerInterval = setInterval(() => {
             if (isGameOver || !isGameStarted || isDialogActive) return; 
-            remainingTime--; updateTimerUI();
+            elapsedTime++; 
+            updateTimerUI();
             
-            // 🚨 觸發隨機動態突發危機 (在 55 秒與 30 秒時觸發)
-            if ((remainingTime === 55 && triggeredCrises === 0) || (remainingTime === 30 && triggeredCrises === 1)) {
+            // 🚨 正計時第 15 秒與第 40 秒時觸發隨機動態突發危機
+            if ((elapsedTime === 15 && triggeredCrises === 0) || (elapsedTime === 40 && triggeredCrises === 1)) {
                 triggerRandomCrisis();
                 return;
             }
 
-            if (remainingTime === 10) logSystem("[警告] 距離結營只剩 10 秒！", "damage");
-            if (remainingTime <= 0) triggerGameOver("timeup");
+            if (elapsedTime >= MAX_OVERTIME_SECONDS) triggerGameOver("timeup");
         }, 1000);
     }
 
     function triggerRandomCrisis() {
         triggeredCrises++;
-        // 停止玩家移動
         isMoving = false;
         pathQueue = [];
 
-        // 隨機抽選一個未發生過的危機
         let available = CRISIS_POOL.map((_, idx) => idx).filter(idx => !usedCrisisIndices.has(idx));
         let pickIdx = available[Math.floor(Math.random() * available.length)];
         usedCrisisIndices.add(pickIdx);
@@ -701,7 +765,6 @@
         triggerShake();
         logSystem(crisis.title, "damage");
 
-        // 借用對話框開啟紅色警戒模式
         isDialogActive = true;
         dialogBox.classList.add('crisis-mode');
         dialogBox.style.display = 'block';
@@ -712,10 +775,13 @@
         const choicesContainer = document.getElementById('choices-container');
         choicesContainer.innerHTML = '';
 
-        crisis.choices.forEach(choice => {
+        // 隨機打亂危機選項順序
+        const shuffledChoices = shuffleArray(crisis.choices);
+
+        shuffledChoices.forEach(choice => {
             let btn = document.createElement('div');
             btn.className = 'choice-btn';
-            let hintTag = (CLASSES[selectedClassKey].showHint && choice.hiddenScore > 0) ? ' ✨(推薦)' : '';
+            let hintTag = (CLASSES[selectedClassKey].showHint && choice.best) ? ' ✨(推薦)' : '';
             btn.innerText = choice.text + hintTag;
 
             btn.onclick = (e) => {
@@ -723,7 +789,6 @@
                 let finalMoodCost = choice.moodChange;
                 let replyText = choice.reply;
 
-                // 🍀 天選佛系專屬強運判定
                 if (CLASSES[selectedClassKey].luckyCrisis && finalMoodCost < 0) {
                     finalMoodCost = 1;
                     replyText += '\n🍀【天選強運觸發】意外獲得學員塞給你的點心，免除扣血並恢復 1 點體力！';
@@ -732,11 +797,11 @@
                 changeMood(finalMoodCost);
                 if (isGameOver) return;
 
-                if (choice.timeChange !== 0) {
-                    remainingTime = Math.max(1, remainingTime + choice.timeChange);
+                if (choice.timePenalty !== 0) {
+                    elapsedTime = Math.max(0, elapsedTime + choice.timePenalty);
                     updateTimerUI();
-                    let tColor = choice.timeChange > 0 ? '#2ed573' : '#ffa502';
-                    let tSign = choice.timeChange > 0 ? `+${choice.timeChange}秒` : `${choice.timeChange}秒`;
+                    let tColor = choice.timePenalty < 0 ? '#2ed573' : '#ffa502';
+                    let tSign = choice.timePenalty < 0 ? `${choice.timePenalty}秒` : `+${choice.timePenalty}秒`;
                     addFloatingText(player.pixelX + TILE_SIZE/2, player.pixelY - 20, tSign, tColor);
                 }
 
@@ -746,7 +811,6 @@
                 document.getElementById('dialog-hint').style.display = 'block';
                 document.getElementById('dialog-hint').innerText = '▼ 點擊解除危機';
                 
-                // 設定一個假 NPC 讓點擊對話框時可以直接關閉
                 currentDialogNPC = { msgs: [''] };
                 currentDialogIndex = 1;
             };
@@ -781,44 +845,54 @@
         if (currentMood <= 0) triggerGameOver("mood"); 
     }
 
+    // 檢查雙任務是否皆已完成
+    function checkAllQuestsCompleted() {
+        if (talkedTo.size >= QUEST_GOAL && collectedSupplies >= SUPPLY_GOAL && currentMood > 0 && !isDialogActive) {
+            triggerVictory();
+        } else if (talkedTo.size >= QUEST_GOAL && collectedSupplies < SUPPLY_GOAL) {
+            logSystem(`[提示] 還差 ${SUPPLY_GOAL - collectedSupplies} 個遺失物資未找齊！`, "info");
+            addFloatingText(player.pixelX + TILE_SIZE/2, player.pixelY - 15, `還差 ${SUPPLY_GOAL - collectedSupplies} 個物資!`, '#ffa502');
+        }
+    }
+
     // ==========================================
     // 🏅 【多重結局與稱號判定系統】
     // ==========================================
     function evaluateEnding(timeUsed) {
-        if (timeUsed <= 28 && currentHiddenScore >= 7) {
+        if (timeUsed <= 45 && currentHiddenScore >= 11) {
             return {
-                icon: '⚡', title: '光速控場之神！', tag: '【⚡光速控場神】', color: '#00f2fe',
-                desc: '你以不可思議的極限速度擺平了所有學員與幹部，同時兼顧了完美的教育耐心！營隊歷史上將永遠流傳你的神話！'
+                icon: '⚡', title: '光速控場之神！', tag: '【⚡光速控場之神】', color: '#00f2fe',
+                desc: '你以不可思議的極限速度擺平了 12 位學員幹部並找齊所有物資，同時兼顧完美的耐心與技巧！營隊歷史將永遠流傳你的神話！再五年！'
             };
-        } else if (currentHiddenScore >= 9) {
+        } else if (currentHiddenScore >= 13) {
             return {
-                icon: '👑', title: '零負評傳說隊輔！', tag: '【👑零負評傳說】', color: 'var(--warning)',
-                desc: '不僅完美解決所有人的問題，連突發危機也處理得滴水不漏！全場學員哭著捨不得你走，總召直接跪求你明年繼續當幹部！'
+                icon: '👑', title: '零負評傳說隊輔！', tag: '【👑零負評傳說隊輔】', color: 'var(--warning)',
+                desc: '不僅完美解決所有人的問題，連突發危機也處理得滴水不漏！全場學員哭著捨不得你走，總籌直接跪求你明年繼續當幹部！'
             };
-        } else if (currentMood <= 3 && currentHiddenScore >= 6) {
+        } else if (currentMood <= 3 && currentHiddenScore >= 9) {
             return {
-                icon: '👼', title: '燃燒生命的聖母！', tag: '【👼燃燒聖母】', color: '#ff9ff3',
-                desc: '為了讓營隊完美進行，你把最後一滴體力都奉獻給了孩子們。結營合照時你雖然累到靈魂出竅，但你是最溫柔的守護神！'
+                icon: '👼', title: '燃燒生命的天使！', tag: '【👼燃燒生命的天使】', color: '#ff9ff3',
+                desc: '為了讓營隊完美進行，你把最後一滴體力都奉獻給了孩子們。下營合照時你雖然累到靈魂出竅，但你是最溫柔的守護神！'
             };
-        } else if (currentMood >= 12 && currentHiddenScore >= 5) {
+        } else if (currentMood >= 12 && currentHiddenScore >= 8) {
             return {
-                icon: '😎', title: '優雅控場大師！', tag: '【😎優雅大師】', color: 'var(--success)',
-                desc: '別人在營隊裡跑得滿頭大汗，你卻一邊喝著珍奶、一邊優雅地把所有危機順手解決，體力還多到可以再帶三個梯次！'
+                icon: '😎', title: '優雅控場大師！', tag: '【😎優雅控場大師】', color: 'var(--success)',
+                desc: '別人在營隊裡跑得滿頭大汗，你卻一邊喝著珍奶、一邊優雅地把所有危機與物資順手解決，體力還多到可以再帶三個梯次！'
             };
-        } else if (currentHiddenScore <= 3) {
+        } else if (currentHiddenScore <= 5) {
             return {
-                icon: '🔥', title: '暴走鐵血教官！', tag: '【🔥鐵血教官】', color: 'var(--danger)',
+                icon: '🔥', title: '暴走鐵血教官！', tag: '【🔥爆走鐵血教官】', color: 'var(--danger)',
                 desc: '雖然在時間內走完了流程，但你一路吼小孩、放生幹部！全場學員看到你都嚇得發抖，堪稱營隊史上最凶狠的傳奇人物！'
             };
-        } else if (currentHiddenScore >= 5) {
+        } else if (currentHiddenScore >= 8) {
             return {
-                icon: '🏆', title: '王牌優秀隊輔！', tag: '【🏆王牌隊輔】', color: 'var(--warning)',
-                desc: '面對各種失控場面與突發危機，你展現了極佳的抗壓性與成熟度，順利帶領小隊平安結營！'
+                icon: '🏆', title: '優秀隊輔！', tag: '【🏆優秀隊輔】', color: 'var(--warning)',
+                desc: '面對各種失控場面與突發危機，你展現了極佳的抗壓性與成熟度，順利找齊物資並帶領小隊平安下營！'
             };
         } else {
             return {
-                icon: '😅', title: '驚險過關的菜鳥', tag: '【😅驚險菜鳥】', color: '#a4b0be',
-                desc: '雖然壓線撐過了營隊，但處理危機的方式稍微急躁了一點，檢討會上被總召小小念了一下，下次再多點耐心吧！'
+                icon: '😅', title: '驚險過關的菜鳥', tag: '【😅菜鳥】', color: '#a4b0be',
+                desc: '雖然壓線撐過了營隊，但處理危機的方式稍微急躁了一點，檢討會上被總籌小小念了一下，下次再多點耐心吧！'
             };
         }
     }
@@ -838,8 +912,8 @@
 
         if (reason === "timeup") {
             icon.innerText = '⏳'; title.innerText = '任務超時'; title.style.color = 'var(--warning)';
-            badge.style.display = 'inline-block'; badge.innerText = '獲得稱號：【🐢 慢郎中隊輔】';
-            desc.innerHTML = '動作太慢了，營隊大混亂，進度嚴重落後...<br>結營檢討會被電爆了。';
+            badge.style.display = 'inline-block'; badge.innerText = '獲得稱號：【🐢 太慢啦！】';
+            desc.innerHTML = '耗時超過 180 秒，營隊大混亂，進度嚴重落後...<br>下營檢討會被電爆了。';
         } else {
             icon.innerText = '💀'; title.innerText = '體力耗盡'; title.style.color = 'var(--danger)';
             badge.style.display = 'inline-block'; badge.innerText = '獲得稱號：【🥀 過勞倒地不起】';
@@ -857,7 +931,7 @@
         const icon = document.getElementById('ending-icon'); const title = document.getElementById('ending-title'); const desc = document.getElementById('ending-desc');
         const badge = document.getElementById('ending-badge');
         
-        finalTimeUsed = GAME_TIME_SECONDS - remainingTime;
+        finalTimeUsed = Math.max(1, elapsedTime);
         const result = evaluateEnding(finalTimeUsed);
         currentTitleTag = result.tag;
 
@@ -867,7 +941,7 @@
         badge.style.display = 'inline-block';
         badge.innerText = `解鎖稱號：${result.tag}`;
 
-        desc.innerHTML = `通關時間：<span style="color:var(--success); font-weight:bold;">${finalTimeUsed} 秒</span> ｜ 隱藏考核：<span style="color:var(--warning); font-weight:bold;">${currentHiddenScore} 分</span> ｜ 剩餘體力：<span style="color:var(--primary); font-weight:bold;">${currentMood}</span><br><br>${result.desc}`;
+        desc.innerHTML = `總計耗時：<span style="color:var(--success); font-weight:bold;">${finalTimeUsed} 秒</span> ｜ 隱藏考核：<span style="color:var(--warning); font-weight:bold;">${currentHiddenScore} 分</span> ｜ 剩餘體力：<span style="color:var(--primary); font-weight:bold;">${currentMood}</span><br><br>${result.desc}`;
         
         document.getElementById('score-submit-area').style.display = 'flex';
         document.getElementById('ending-leaderboard').style.display = 'none';
@@ -877,10 +951,13 @@
         overlay.style.display = 'flex'; logSystem("[系統] 任務完成，正在結算成績...", "heal");
     }
 
-    function updateQuestUI() { document.getElementById('quest-progress').innerText = `${talkedTo.size}/${QUEST_GOAL}`; }
+    function updateQuestUI() { 
+        document.getElementById('quest-progress').innerText = `${talkedTo.size}/${QUEST_GOAL}`; 
+        document.getElementById('supply-progress').innerText = `${collectedSupplies}/${SUPPLY_GOAL}`;
+    }
 
     function restartGame() {
-        stepCount = 0; talkedTo.clear(); remainingTime = GAME_TIME_SECONDS; 
+        stepCount = 0; talkedTo.clear(); collectedSupplies = 0; elapsedTime = 0; 
         triggeredCrises = 0; usedCrisisIndices.clear();
         applyClassStats();
 
@@ -891,7 +968,7 @@
         loadStartLeaderboard();
         
         floatingTexts = []; currentScene = 'classroom'; 
-        player.gridX = 7; player.gridY = 7; player.pixelX = 7*TILE_SIZE; player.pixelY = 7*TILE_SIZE; player.facing = 'down';
+        player.gridX = 7; player.gridY = 5; player.pixelX = 7*TILE_SIZE; player.pixelY = 5*TILE_SIZE; player.facing = 'down';
         
         isGameOver = false; isDialogActive = false; currentDialogNPC = null; 
         dialogBox.style.display = 'none'; dialogBox.classList.remove('crisis-mode');
@@ -902,7 +979,6 @@
             scenes[s].npcs?.forEach(npc => { npc.gridX = npc.startX; npc.gridY = npc.startY; npc.pixelX = npc.startX*TILE_SIZE; npc.pixelY = npc.startY*TILE_SIZE;});
         }
         document.getElementById('ending-overlay').style.display = 'none';
-        // 回到開始畫面讓玩家可以換職業
         isGameStarted = false;
         document.getElementById('start-screen-overlay').style.display = 'flex';
     }
@@ -950,16 +1026,18 @@
         } else {
             document.getElementById('dialog-text').innerText = msg.question;
             document.getElementById('dialog-hint').style.display = 'none'; choicesContainer.innerHTML = '';
-            msg.choices.forEach(choice => {
+            
+            // 🔀 每次開啟選項時自動隨機洗牌位置，防止固定記憶點擊
+            const shuffledChoices = shuffleArray(msg.choices);
+
+            shuffledChoices.forEach(choice => {
                 let btn = document.createElement('div'); btn.className = 'choice-btn'; 
-                // 🧠 讀心大師專屬天賦：提示最佳選項
                 let hintTag = (CLASSES[selectedClassKey].showHint && choice.best) ? ' ✨(推薦)' : '';
                 btn.innerText = choice.text + hintTag;
 
                 btn.onclick = (e) => {
                     e.stopPropagation();
                     let moodCost = choice.moodChange;
-                    // 🏃 體能狂人負面效果：選錯時扣血加重
                     if (choice.hiddenScore < 0) {
                         moodCost += CLASSES[selectedClassKey].wrongPenalty;
                     }
@@ -986,7 +1064,7 @@
 
         if (requiredNPCs.includes(npc.name) && !talkedTo.has(npc.name)) {
             talkedTo.add(npc.name); updateQuestUI();
-            logSystem(`[任務] 進度更新 (${talkedTo.size}/${QUEST_GOAL})`, "info");
+            logSystem(`[任務] 安撫進度 (${talkedTo.size}/${QUEST_GOAL})`, "info");
         }
 
         currentDialogNPC = npc; currentDialogIndex = 0; document.getElementById('dialog-name').innerText = npc.name;
@@ -1002,7 +1080,7 @@
         } else {
             dialogBox.style.display = 'none'; dialogBox.classList.remove('crisis-mode');
             isDialogActive = false; currentDialogNPC = null; 
-            if (talkedTo.size >= QUEST_GOAL && currentMood > 0 && remainingTime > 0) triggerVictory();
+            checkAllQuestsCompleted();
         }
     };
 
@@ -1105,7 +1183,19 @@
                 pathQueue.shift();
                 
                 let item = scene.items?.find(i => i.x === player.gridX && i.y === player.gridY && !i.picked);
-                if (item) { item.picked = true; changeMood(item.heal); logSystem(`[拾取] 獲得 ${item.name}`, "info");}
+                if (item) { 
+                    item.picked = true; 
+                    changeMood(item.heal); 
+                    if (item.isSupply) {
+                        collectedSupplies++;
+                        updateQuestUI();
+                        logSystem(`[任務] 尋回物資：${item.name} (${collectedSupplies}/${SUPPLY_GOAL})`, "heal");
+                        addFloatingText(player.pixelX + TILE_SIZE/2, player.pixelY - 20, `尋回 ${item.name}!`, '#4facfe');
+                        checkAllQuestsCompleted();
+                    } else {
+                        logSystem(`[拾取] 獲得 ${item.name}`, "info");
+                    }
+                }
 
                 stepCount++;
                 if (stepCount >= cls.walkStepsCost) { stepCount = 0; changeMood(-1); }
@@ -1138,8 +1228,15 @@
         if (scene.items) {
             for (let item of scene.items) { 
                 if (!item.picked) {
-                    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(item.x*TILE_SIZE+25, item.y*TILE_SIZE+40, 10, 5, 0, 0, Math.PI*2); ctx.fill();
-                    drawGraphic(item.imgKey, item.icon, item.x * TILE_SIZE + TILE_SIZE/2, item.y * TILE_SIZE + TILE_SIZE/2 + breatheOffset, 1, 1); 
+                    let ix = item.x * TILE_SIZE + TILE_SIZE/2;
+                    let iy = item.y * TILE_SIZE + TILE_SIZE/2;
+                    // 若為任務物資，加上金色光圈提示
+                    if (item.isSupply) {
+                        ctx.fillStyle = 'rgba(255, 165, 2, 0.35)';
+                        ctx.beginPath(); ctx.arc(ix, iy + breatheOffset, 22, 0, Math.PI*2); ctx.fill();
+                    }
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(ix, item.y*TILE_SIZE+40, 10, 5, 0, 0, Math.PI*2); ctx.fill();
+                    drawGraphic(item.imgKey, item.icon, ix, iy + breatheOffset, 1, 1); 
                 }
             }
         }
