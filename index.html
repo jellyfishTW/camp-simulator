@@ -220,7 +220,7 @@
         <div id="dialog-hint">▼ 點擊繼續 (或點擊對話框)</div>
     </div>
     
-    <!-- 📖 開始畫面 (含職業選擇、獎盃櫃按鈕與即時排行榜) -->
+    <!-- 📖 開始畫面 (含職業選擇、獎盃櫃與排行榜) -->
     <div id="start-screen-overlay" class="overlay-screen" style="display: flex; background: rgba(20, 30, 40, 0.96); z-index: 200;">
         <div style="font-size: 40px; margin-bottom: 3px; filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.8));">🏕️</div>
         <div id="start-title" style="font-size: 28px; margin-bottom: 6px; font-weight: 900; letter-spacing: 2px; color: var(--primary);">營隊生存模擬器</div>
@@ -254,19 +254,19 @@
             </div>
         </div>
 
-        <div style="display: flex; gap: 10px; margin-top: 5px;">
-            <button class="btn-action" style="background: linear-gradient(90deg, #f39c12, #f1c40f); padding: 10px 20px; font-size: 15px;" onclick="openTrophyModal()">🏆 榮譽獎盃櫃</button>
-            <button class="btn-action" style="padding: 10px 25px; font-size: 15px;" onclick="startGame()">進入營隊</button>
+        <div style="display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap; justify-content: center;">
+            <button class="btn-action" style="background: linear-gradient(90deg, #f39c12, #f1c40f); padding: 10px 18px; font-size: 14px;" onclick="openTrophyModal()">🏆 榮譽獎盃櫃</button>
+            <button class="btn-action" style="padding: 10px 22px; font-size: 14px;" onclick="startGame()">進入營隊</button>
         </div>
     </div>
 
     <!-- 🏆 成就獎盃櫃彈窗 -->
     <div id="trophy-modal">
-        <div style="font-size: 24px; font-weight: 900; color: var(--warning); margin-bottom: 12px; letter-spacing: 1px;">🏆 隊輔榮譽獎盃櫃</div>
-        <div id="trophy-list" style="width: 100%; max-width: 360px; max-height: 52dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
+        <div style="font-size: 22px; font-weight: 900; color: var(--warning); margin-bottom: 10px; letter-spacing: 1px;">🏆 隊輔榮譽獎盃櫃</div>
+        <div id="trophy-list" style="width: 100%; max-width: 360px; max-height: 50dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
             <!-- 動態填入成就清單 -->
         </div>
-        <button class="btn-action" style="margin-top: 0; padding: 10px 30px; font-size: 16px;" onclick="closeTrophyModal()">返回選單</button>
+        <button class="btn-action" style="margin-top: 0; padding: 10px 30px; font-size: 15px;" onclick="closeTrophyModal()">返回選單</button>
     </div>
 
     <!-- 🥀 / 🎉 結局畫面 -->
@@ -276,10 +276,13 @@
         <div id="ending-badge">獲得稱號：【傳說隊輔】</div>
         <div id="ending-desc" style="font-size: 14px; color: #dfe4ea; line-height: 1.5; max-width: 420px; padding: 0 15px;"></div>
         
-        <!-- 姓名輸入區塊 -->
+        <!-- 姓名與分享成績區塊 -->
         <div id="score-submit-area" style="display: none; flex-direction: column; align-items: center; width: 100%; margin-top: 12px;">
             <input type="text" id="player-name-input" placeholder="輸入大名留存稱號與紀錄..." maxlength="10" style="padding: 8px; font-size: 16px; border-radius: 8px; border: 2px solid var(--warning); text-align: center; margin-bottom: 10px; width: 80%; max-width: 240px; background: rgba(0,0,0,0.8); color: #fff; outline: none; pointer-events: auto;">
-            <button class="btn-action" style="margin-top: 0; padding: 10px 25px; font-size: 16px;" onclick="submitScore()">上傳稱號與成績</button>
+            <div style="display: flex; gap: 8px; width: 100%; justify-content: center; flex-wrap: wrap;">
+                <button class="btn-action" style="margin-top: 0; padding: 10px 20px; font-size: 15px;" onclick="submitScore()">上傳雲端排行</button>
+                <button class="btn-action" style="margin-top: 0; padding: 10px 20px; font-size: 15px; background: linear-gradient(90deg, #2ed573, #7bed9f);" onclick="copyScoreCard()">📋 複製戰績卡</button>
+            </div>
         </div>
 
         <!-- 🏆 結算畫面：排行榜 -->
@@ -337,7 +340,7 @@
     };
 
     // ==========================================
-    // 🏆 【成就系統 (LocalStorage 驅動)】
+    // 🏆 【成就系統與戰績卡片複製】
     // ==========================================
     const ACHIEVEMENTS_DATA = [
         { id: 'ach_first_win', icon: '🏕️', name: '初入營林', desc: '成功完成一次營隊挑戰結營' },
@@ -393,6 +396,20 @@
 
     function closeTrophyModal() {
         document.getElementById('trophy-modal').style.display = 'none';
+    }
+
+    // 📋 複製戰績卡片分享
+    function copyScoreCard() {
+        let text = `🏕️【營隊生存模擬器】結算報告\n👑 稱號：${currentTitleTag}\n🎭 職業：${CLASSES[selectedClassKey].name}\n⏱️ 總計耗時：${finalTimeUsed} 秒\n⭐ 隱藏考核：${currentHiddenScore} 分\n❤️ 剩餘體力：${currentMood}/${currentMaxMood}\n快來挑戰成為傳說級隊輔！`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('📋 戰績卡片已複製到剪貼簿！快去貼給朋友看看吧！');
+            }).catch(() => {
+                prompt('請手動複製以下戰績文字：', text);
+            });
+        } else {
+            prompt('請手動複製以下戰績文字：', text);
+        }
     }
 
     // ==========================================
@@ -1026,7 +1043,6 @@
         const result = evaluateEnding(finalTimeUsed);
         currentTitleTag = result.tag;
 
-        // 💡 觸發成就檢查與解鎖
         checkAndUnlockAchievements(true, finalTimeUsed, result.tag, selectedClassKey);
 
         icon.innerText = result.icon;
