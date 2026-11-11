@@ -333,7 +333,7 @@
     }
 
     // ==========================================
-    // 🚨 【隨機動態突發危機題庫】(正計時版：負數代表省時獎勵，正數代表罰時)
+    // 🚨 【隨機動態突發危機題庫】
     // ==========================================
     const CRISIS_POOL = [
         {
@@ -356,7 +356,7 @@
             title: '🚨 突發危機：音控設備大爆音！',
             question: '教室麥克風突然發出刺耳尖叫聲，全場學員摀著耳朵開始躁動！',
             choices: [
-                { text: '在設備處理期間安撫學員情緒', moodChange: -2, timePenalty: -4, hiddenScore: 1, best: true, reply: '學員雖然感到不適，但你的用心他們感受到了！(體力 -1，耗時 -4秒，考核 +1)' },
+                { text: '在設備處理期間安撫學員情緒', moodChange: -2, timePenalty: -4, hiddenScore: 1, best: true, reply: '學員雖然感到不適，但你的用心他們感受到了！(體力 -2，耗時 -4秒，考核 +1)' },
                 { text: '在台下跟著一起摀耳朵乾瞪眼', moodChange: -1, timePenalty: 4, hiddenScore: -1, reply: '場面尷尬冷場了好幾分鐘...(體力 -1，耗時 +4秒，考核 -1)' }
             ]
         },
@@ -375,8 +375,8 @@
     // ==========================================
     // ⚙️ 核心設定 (正計時與雙主線任務)
     // ==========================================
-    let elapsedTime = 0; // 正計時秒數 (從 0 開始)
-    const MAX_OVERTIME_SECONDS = 180; // 超過 180 秒判定超時失敗
+    let elapsedTime = 0;
+    const MAX_OVERTIME_SECONDS = 180;
     let timerInterval = null; 
     let finalTimeUsed = 0; 
     let currentTitleTag = '【隊輔】';
@@ -403,12 +403,10 @@
     let currentDialogNPC = null; 
     let currentDialogIndex = 0;  
     
-    // 任務 1：安撫 12 位 NPC
     let talkedTo = new Set();
-    const requiredNPCs = ['小明', '小偉', '大華', '小美', '小安', '阿哲', '瓜瓜', '總籌', '副籌', '邱曉昕', 'Jimmy', '場活股'];
-    const QUEST_GOAL = requiredNPCs.length;
+    let requiredNPCs = []; // 💡 改由下方根據地圖自動收集，改名也不會壞掉！
+    let QUEST_GOAL = 12;
 
-    // 任務 2：尋回 3 個遺失的營隊物資
     let collectedSupplies = 0;
     const SUPPLY_GOAL = 3;
 
@@ -433,7 +431,7 @@
     initTextures();
 
     // ==========================================
-    // 📖 擴充版劇本與地圖資料 (選項已調換 + 新增人物與任務物資)
+    // 📖 擴充版劇本與地圖資料
     // ==========================================
     const scenes = {
         classroom: {
@@ -607,7 +605,7 @@
                         { question: '晚餐少訂了，你要怎麼處理？',
                           choices: [
                             { text: '先搶先贏，學員沒吃關我什麼事', moodChange: -2, hiddenScore: -1, reply: '學員沒吃飽，現場大吵起來！(心情 -2)' },
-                            { text: '接受這件事實，只是晚點吃而已還能忍耐', moodChange: -1, hiddenScore: 1, best: true, reply: '天才主意！學員反而覺得更好喝了！(考核 +1)' }
+                            { text: '接受這件事實，只是晚點吃而已還能忍耐', moodChange: -1, hiddenScore: 1, best: true, reply: '感謝體諒！我們已經馬上聯絡廠商補送了！(考核 +1)' }
                           ]
                         }
                     ] 
@@ -616,15 +614,20 @@
         }
     };
 
+    // 💡 自動讀取所有場景中的 NPC 名稱加入過關清單，未來改名也永遠不會卡關！
     for (let s in scenes) {
         for (let npc of scenes[s].npcs) {
             npc.gridX = npc.x; npc.gridY = npc.y;
             npc.pixelX = npc.x * TILE_SIZE; npc.pixelY = npc.y * TILE_SIZE;
             npc.startX = npc.x; npc.startY = npc.y;
+            if (!requiredNPCs.includes(npc.name)) {
+                requiredNPCs.push(npc.name);
+            }
         }
     }
+    QUEST_GOAL = requiredNPCs.length;
 
-    // 隨機洗牌陣列工具函數 (確保選項不會固定在同一個位置)
+    // 隨機洗牌陣列工具函數
     function shuffleArray(arr) {
         let copy = [...arr];
         for (let i = copy.length - 1; i > 0; i--) {
@@ -777,7 +780,6 @@
         const choicesContainer = document.getElementById('choices-container');
         choicesContainer.innerHTML = '';
 
-        // 隨機打亂危機選項順序
         const shuffledChoices = shuffleArray(crisis.choices);
 
         shuffledChoices.forEach(choice => {
@@ -1029,7 +1031,6 @@
             document.getElementById('dialog-text').innerText = msg.question;
             document.getElementById('dialog-hint').style.display = 'none'; choicesContainer.innerHTML = '';
             
-            // 🔀 每次開啟選項時自動隨機洗牌位置，防止固定記憶點擊
             const shuffledChoices = shuffleArray(msg.choices);
 
             shuffledChoices.forEach(choice => {
@@ -1151,11 +1152,12 @@
 
     function lerp(start, end, factor) { return start + (end - start) * factor; }
     
-    function drawNameLabel(title, name, px, py, isPlayer = false) {
+    function drawNameLabel(title, name, px, py, isPlayer = false, isDone = false) {
         ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
         ctx.font = 'bold 11px sans-serif'; ctx.fillStyle = isPlayer ? '#feca57' : '#a4b0be'; ctx.fillText(`[${title}]`, px, py - 18);
-        ctx.font = '900 14px "微軟正黑體", sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.strokeText(name, px, py - 3);
-        ctx.fillStyle = isPlayer ? '#1dd1a1' : '#ffffff'; ctx.fillText(name, px, py - 3);
+        let displayName = isDone ? `✅${name}` : name;
+        ctx.font = '900 14px "微軟正黑體", sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.strokeText(displayName, px, py - 3);
+        ctx.fillStyle = isPlayer ? '#1dd1a1' : (isDone ? '#2ed573' : '#ffffff'); ctx.fillText(displayName, px, py - 3);
     }
 
     function drawGraphic(imgKey, icon, px, py, tilesW = 1, tilesH = 1) {
@@ -1232,7 +1234,6 @@
                 if (!item.picked) {
                     let ix = item.x * TILE_SIZE + TILE_SIZE/2;
                     let iy = item.y * TILE_SIZE + TILE_SIZE/2;
-                    // 若為任務物資，加上金色光圈提示
                     if (item.isSupply) {
                         ctx.fillStyle = 'rgba(255, 165, 2, 0.35)';
                         ctx.beginPath(); ctx.arc(ix, iy + breatheOffset, 22, 0, Math.PI*2); ctx.fill();
@@ -1252,7 +1253,7 @@
             let cx = npc.pixelX + TILE_SIZE/2; let cy = npc.pixelY + TILE_SIZE/2;
             ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(cx, cy + 15, 14, 6, 0, 0, Math.PI*2); ctx.fill(); 
             drawGraphic(npc.imgKey, npc.icon, cx, cy + breatheOffset, 1, 1); 
-            drawNameLabel(npc.title, npc.name, cx, cy); 
+            drawNameLabel(npc.title, npc.name, cx, cy, false, talkedTo.has(npc.name)); 
         }
 
         let px = player.pixelX + TILE_SIZE/2; let py = player.pixelY + TILE_SIZE/2;
