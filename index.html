@@ -349,6 +349,8 @@
         { id: 'ach_all_classes', icon: '🎭', name: '全能導師', desc: '分別使用三種天賦職業成功通關過' }
     ];
 
+    let lastEndingResult = null; // 儲存當前局的評價物件
+
     function checkAndUnlockAchievements(isVictory, timeUsed, endingTag, classKey) {
         let achs = JSON.parse(localStorage.getItem('camp_achievements')) || {};
         let classesUsed = JSON.parse(localStorage.getItem('camp_classes_used')) || [];
@@ -398,50 +400,56 @@
         document.getElementById('trophy-modal').style.display = 'none';
     }
 
-    // 📥 動態生成並下載戰績 JPG 卡片
+    // 📥 動態生成並下載包含「綜合評價」的戰績 JPG 卡片
     function downloadScoreCardJPG() {
         let tempCanvas = document.createElement('canvas');
         tempCanvas.width = 600;
-        tempCanvas.height = 400;
+        tempCanvas.height = 430;
         let tCtx = tempCanvas.getContext('2d');
 
         // 背景色漸層
-        let grad = tCtx.createLinearGradient(0, 0, 600, 400);
+        let grad = tCtx.createLinearGradient(0, 0, 600, 430);
         grad.addColorStop(0, '#1e272e');
         grad.addColorStop(1, '#0f141e');
         tCtx.fillStyle = grad;
-        tCtx.fillRect(0, 0, 600, 400);
+        tCtx.fillRect(0, 0, 600, 430);
 
         // 外框
         tCtx.strokeStyle = '#4facfe';
         tCtx.lineWidth = 4;
-        tCtx.strokeRect(15, 15, 570, 370);
+        tCtx.strokeRect(15, 15, 570, 400);
 
         // 標題
         tCtx.fillStyle = '#ffa502';
-        tCtx.font = '900 26px "微軟正黑體", sans-serif';
+        tCtx.font = '900 24px "微軟正黑體", sans-serif';
         tCtx.textAlign = 'center';
-        tCtx.fillText('🏕️ 營隊生存模擬器 - 結算戰績卡', 300, 65);
+        tCtx.fillText('🏕️ 營隊生存模擬器 - 結算戰績卡', 300, 55);
+
+        // 綜合評價
+        let ratingTitle = lastEndingResult ? lastEndingResult.title : '優秀隊輔';
+        tCtx.fillStyle = '#2ed573';
+        tCtx.font = 'bold 22px "微軟正黑體", sans-serif';
+        tCtx.fillText(`🌟 綜合評價：${ratingTitle}`, 300, 95);
 
         // 稱號
         tCtx.fillStyle = '#ff6b6b';
-        tCtx.font = 'bold 22px "微軟正黑體", sans-serif';
-        tCtx.fillText(currentTitleTag, 300, 110);
+        tCtx.font = 'bold 16px "微軟正黑體", sans-serif';
+        tCtx.fillText(currentTitleTag, 300, 130);
 
         // 數據內容
         tCtx.fillStyle = '#ffffff';
-        tCtx.font = '18px "微軟正黑體", sans-serif';
+        tCtx.font = '17px "微軟正黑體", sans-serif';
         tCtx.textAlign = 'left';
-        tCtx.fillText(`🎭 隊輔職業： ${CLASSES[selectedClassKey].name}`, 80, 170);
-        tCtx.fillText(`⏱️ 總計耗時： ${finalTimeUsed} 秒`, 80, 215);
-        tCtx.fillText(`⭐ 隱藏考核： ${currentHiddenScore} 分`, 80, 260);
-        tCtx.fillText(`❤️ 剩餘體力： ${currentMood} / ${currentMaxMood}`, 80, 305);
+        tCtx.fillText(`🎭 隊輔職業： ${CLASSES[selectedClassKey].name}`, 80, 185);
+        tCtx.fillText(`⏱️ 總計耗時： ${finalTimeUsed} 秒`, 80, 230);
+        tCtx.fillText(`⭐ 隱藏考核： ${currentHiddenScore} 分`, 80, 275);
+        tCtx.fillText(`❤️ 剩餘體力： ${currentMood} / ${currentMaxMood}`, 80, 320);
 
         // 底部版權
         tCtx.fillStyle = '#a4b0be';
         tCtx.font = '13px "微軟正黑體", sans-serif';
         tCtx.textAlign = 'center';
-        tCtx.fillText('GitHub Pages | 營隊生存模擬器 MMO 旗艦版', 300, 355);
+        tCtx.fillText('GitHub Pages | 營隊生存模擬器 MMO 旗艦版', 300, 385);
 
         // 觸發下載 JPG
         let link = document.createElement('a');
@@ -1080,6 +1088,7 @@
         finalTimeUsed = Math.max(1, elapsedTime);
         const result = evaluateEnding(finalTimeUsed);
         currentTitleTag = result.tag;
+        lastEndingResult = result; // 記錄評價結果供 JPG 卡片使用
 
         checkAndUnlockAchievements(true, finalTimeUsed, result.tag, selectedClassKey);
 
