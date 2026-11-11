@@ -74,7 +74,6 @@
         display: none; font-size: 18px; line-height: 1.6; z-index: 9999; color: #fff;
         pointer-events: auto; cursor: pointer; box-shadow: 0 10px 40px rgba(0,0,0,0.9);
     }
-    /* 🚨 突發危機專用紅框樣式 */
     #dialog-box.crisis-mode {
         background: linear-gradient(180deg, rgba(60, 20, 25, 0.96), rgba(25, 10, 15, 0.98));
         border: 2px solid var(--danger);
@@ -88,7 +87,7 @@
     .choice-btn { background: rgba(79, 172, 254, 0.15); color: #fff; padding: 14px 20px; border-radius: 8px; border: 1px solid var(--primary); text-align: center; font-weight: bold; cursor: pointer; transition: 0.1s; }
     .choice-btn:active { background: rgba(79, 172, 254, 0.6); transform: scale(0.98); }
 
-    /* ================= 🎭 螢幕遮罩與職業選擇 ================= */
+    /* ================= 🎭 螢幕遮罩與選單 ================= */
     .overlay-screen { 
         position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; 
         display: none; flex-direction: column; justify-content: center; align-items: center; 
@@ -99,7 +98,7 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     
     .class-selector {
-        display: flex; gap: 10px; width: 95%; max-width: 500px; justify-content: center; margin-top: 10px; pointer-events: auto;
+        display: flex; gap: 10px; width: 95%; max-width: 500px; justify-content: center; margin-top: 8px; pointer-events: auto;
     }
     .class-card {
         flex: 1; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.15);
@@ -109,32 +108,53 @@
         background: rgba(79, 172, 254, 0.25); border-color: var(--primary);
         box-shadow: 0 0 15px rgba(79, 172, 254, 0.5); transform: translateY(-3px);
     }
-    .class-icon { font-size: 26px; margin-bottom: 4px; }
-    .class-title { font-size: 14px; font-weight: 900; color: var(--warning); margin-bottom: 4px; }
-    .class-desc { font-size: 11px; color: #dfe4ea; line-height: 1.3; }
+    .class-icon { font-size: 24px; margin-bottom: 2px; }
+    .class-title { font-size: 13px; font-weight: 900; color: var(--warning); margin-bottom: 2px; }
+    .class-desc { font-size: 10px; color: #dfe4ea; line-height: 1.3; }
 
-    .btn-action { margin-top: 18px; padding: 14px 40px; background: linear-gradient(90deg, var(--primary), #00f2fe); color: #fff; border-radius: 8px; cursor: pointer; font-size: 20px; font-weight: 900; box-shadow: 0 0 20px rgba(79, 172, 254, 0.5); pointer-events: auto; border: none; letter-spacing: 2px; flex-shrink: 0;}
+    .btn-action { margin-top: 15px; padding: 12px 35px; background: linear-gradient(90deg, var(--primary), #00f2fe); color: #fff; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: 900; box-shadow: 0 0 20px rgba(79, 172, 254, 0.5); pointer-events: auto; border: none; letter-spacing: 2px; flex-shrink: 0;}
     .btn-action:active { transform: scale(0.95); }
     .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
     @keyframes shake { 10%, 90% { transform: translate3d(-3px, 0, 0); } 20%, 80% { transform: translate3d(5px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
 
-    /* 排行榜面板 */
+    /* 排行榜與成就面板 */
     .leaderboard {
-        margin-top: 15px; width: 95%; max-width: 360px;
-        background: rgba(0,0,0,0.65); padding: 12px 15px; border-radius: 12px;
+        margin-top: 10px; width: 95%; max-width: 360px;
+        background: rgba(0,0,0,0.65); padding: 10px 15px; border-radius: 12px;
         border: 1px solid var(--warning); box-sizing: border-box; box-shadow: 0 5px 15px rgba(0,0,0,0.5); flex-shrink: 0;
     }
     .leaderboard-row {
         display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1);
-        padding-bottom: 6px; margin-bottom: 6px; font-size: 14px; color: #ffffff;
+        padding-bottom: 5px; margin-bottom: 5px; font-size: 13px; color: #ffffff;
     }
     .leaderboard-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 
-    /* 稱號徽章 */
+    /* 🏆 成就獎盃櫃彈窗樣式 */
+    #trophy-modal {
+        display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
+        background: rgba(10, 15, 25, 0.95); z-index: 500; flex-direction: column;
+        justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
+        backdrop-filter: blur(8px);
+    }
+    .trophy-item {
+        background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px; padding: 10px 15px; display: flex; align-items: center; gap: 15px;
+        width: 100%; max-width: 340px; box-sizing: border-box; opacity: 0.5;
+    }
+    .trophy-item.unlocked {
+        background: rgba(255, 165, 2, 0.12); border-color: var(--warning); opacity: 1.0;
+        box-shadow: 0 0 15px rgba(255, 165, 2, 0.3);
+    }
+    .trophy-icon { font-size: 28px; filter: grayscale(100%); }
+    .trophy-item.unlocked .trophy-icon { filter: none; }
+    .trophy-info { display: flex; flex-direction: column; text-align: left; }
+    .trophy-name { font-size: 14px; font-weight: 900; color: #fff; margin-bottom: 2px; }
+    .trophy-desc { font-size: 11px; color: #a4b0be; line-height: 1.3; }
+
     #ending-badge {
         display: none; background: linear-gradient(90deg, #ff9f43, #ff6b6b); color: #fff;
         padding: 6px 18px; border-radius: 20px; font-weight: 900; font-size: 16px;
-        margin-bottom: 12px; box-shadow: 0 0 15px rgba(255, 107, 107, 0.6); letter-spacing: 1px;
+        margin-bottom: 10px; box-shadow: 0 0 15px rgba(255, 107, 107, 0.6); letter-spacing: 1px;
     }
 
     /* ================= 📱 手機版排版優化 ================= */
@@ -149,15 +169,15 @@
         #dialog-text { font-size: 16px; }
         .choice-btn { padding: 12px 15px; font-size: 15px; margin-top: 5px; }
 
-        #start-title { font-size: 26px!important; margin-bottom: 8px!important; }
-        .class-icon { font-size: 22px; }
-        .class-title { font-size: 13px; }
-        .class-desc { font-size: 10px; }
+        #start-title { font-size: 26px!important; margin-bottom: 5px!important; }
+        .class-icon { font-size: 20px; }
+        .class-title { font-size: 12px; }
+        .class-desc { font-size: 9px; }
         
         #ending-icon { font-size: 45px!important; margin-bottom: 5px!important; }
-        #ending-title { font-size: 28px!important; margin-bottom: 8px!important; }
-        #ending-desc { font-size: 14px!important; padding: 0 10px; }
-        .btn-action { font-size: 18px; padding: 12px 30px; margin-top: 12px; }
+        #ending-title { font-size: 26px!important; margin-bottom: 5px!important; }
+        #ending-desc { font-size: 13px!important; padding: 0 10px; }
+        .btn-action { font-size: 17px; padding: 10px 25px; margin-top: 10px; }
     }
 </style>
 </head>
@@ -200,60 +220,72 @@
         <div id="dialog-hint">▼ 點擊繼續 (或點擊對話框)</div>
     </div>
     
-    <!-- 📖 開始畫面 (含職業選擇與即時排行榜) -->
+    <!-- 📖 開始畫面 (含職業選擇、獎盃櫃按鈕與即時排行榜) -->
     <div id="start-screen-overlay" class="overlay-screen" style="display: flex; background: rgba(20, 30, 40, 0.96); z-index: 200;">
-        <div style="font-size: 45px; margin-bottom: 5px; filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.8));">🏕️</div>
-        <div id="start-title" style="font-size: 32px; margin-bottom: 10px; font-weight: 900; letter-spacing: 2px; color: var(--primary);">營隊生存模擬器</div>
+        <div style="font-size: 40px; margin-bottom: 3px; filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.8));">🏕️</div>
+        <div id="start-title" style="font-size: 28px; margin-bottom: 6px; font-weight: 900; letter-spacing: 2px; color: var(--primary);">營隊生存模擬器</div>
         
-        <div style="font-size: 13px; color: #a4b0be; margin-bottom: 4px;">👇 請選擇你的隊輔天賦職業 👇</div>
+        <div style="font-size: 12px; color: #a4b0be; margin-bottom: 2px;">👇 請選擇你的隊輔天賦職業 👇</div>
         
         <!-- 🎭 職業選擇器 -->
         <div class="class-selector">
             <div class="class-card selected" id="card-athletic" onclick="selectClass('athletic')">
                 <div class="class-icon">🏃</div>
-                <div class="class-title">體能狂人</div>
-                <div class="class-desc">移速提升 50%<br>走路不耗體力<br><span style="color:var(--danger);">選錯額外扣血</span></div>
+                <div class="class-title">體能怪物</div>
+                <div class="class-desc">移速+50% 走路不耗體力<br><span style="color:var(--danger);">選錯扣血加倍</span></div>
             </div>
             <div class="class-card" id="card-empath" onclick="selectClass('empath')">
                 <div class="class-icon">🧠</div>
                 <div class="class-title">讀心大師</div>
-                <div class="class-desc">體力上限 18 點<br>顯示最佳選項<br><span style="color:var(--danger);">移動速度略慢</span></div>
+                <div class="class-desc">體力上限18 顯示最佳選項<br><span style="color:var(--danger);">移動速度略慢</span></div>
             </div>
             <div class="class-card" id="card-lucky" onclick="selectClass('lucky')">
                 <div class="class-icon">🍀</div>
-                <div class="class-title">天選佛系</div>
-                <div class="class-desc">初始考核 +1<br>突發危機強運<br><span style="color:var(--danger);">體力上限 12 點</span></div>
+                <div class="class-title">佛系隊輔</div>
+                <div class="class-desc">初始考核+1 危機強運<br><span style="color:var(--danger);">體力上限12</span></div>
             </div>
         </div>
 
         <!-- 🏆 開始畫面：即時排行榜 -->
         <div class="leaderboard" style="display: block;">
-            <div style="color: var(--warning); font-weight: 900; margin-bottom: 8px; font-size: 15px; letter-spacing: 1px;">🏆 目前最速排行榜</div>
-            <div id="start-leaderboard-list" style="text-align: left; font-size: 13px;">
+            <div style="color: var(--warning); font-weight: 900; margin-bottom: 6px; font-size: 14px; letter-spacing: 1px;">🏆 目前最速排行榜</div>
+            <div id="start-leaderboard-list" style="text-align: left; font-size: 12px;">
                 <div style="text-align:center; color:#fff;">📡 資料載入中...</div>
             </div>
         </div>
 
-        <button class="btn-action" onclick="startGame()">進入營隊</button>
+        <div style="display: flex; gap: 10px; margin-top: 5px;">
+            <button class="btn-action" style="background: linear-gradient(90deg, #f39c12, #f1c40f); padding: 10px 20px; font-size: 15px;" onclick="openTrophyModal()">🏆 榮譽獎盃櫃</button>
+            <button class="btn-action" style="padding: 10px 25px; font-size: 15px;" onclick="startGame()">進入營隊</button>
+        </div>
+    </div>
+
+    <!-- 🏆 成就獎盃櫃彈窗 -->
+    <div id="trophy-modal">
+        <div style="font-size: 24px; font-weight: 900; color: var(--warning); margin-bottom: 12px; letter-spacing: 1px;">🏆 隊輔榮譽獎盃櫃</div>
+        <div id="trophy-list" style="width: 100%; max-width: 360px; max-height: 52dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
+            <!-- 動態填入成就清單 -->
+        </div>
+        <button class="btn-action" style="margin-top: 0; padding: 10px 30px; font-size: 16px;" onclick="closeTrophyModal()">返回選單</button>
     </div>
 
     <!-- 🥀 / 🎉 結局畫面 -->
     <div id="ending-overlay" class="overlay-screen" style="background: rgba(15, 15, 20, 0.96);">
-        <div id="ending-icon" style="font-size: 55px; margin-bottom: 8px;"></div>
-        <div id="ending-title" style="font-size: 34px; margin-bottom: 8px; font-weight: 900;"></div>
+        <div id="ending-icon" style="font-size: 50px; margin-bottom: 6px;"></div>
+        <div id="ending-title" style="font-size: 30px; margin-bottom: 6px; font-weight: 900;"></div>
         <div id="ending-badge">獲得稱號：【傳說隊輔】</div>
-        <div id="ending-desc" style="font-size: 15px; color: #dfe4ea; line-height: 1.6; max-width: 420px; padding: 0 15px;"></div>
+        <div id="ending-desc" style="font-size: 14px; color: #dfe4ea; line-height: 1.5; max-width: 420px; padding: 0 15px;"></div>
         
         <!-- 姓名輸入區塊 -->
-        <div id="score-submit-area" style="display: none; flex-direction: column; align-items: center; width: 100%; margin-top: 15px;">
-            <input type="text" id="player-name-input" placeholder="輸入大名留存稱號與紀錄..." maxlength="10" style="padding: 10px; font-size: 16px; border-radius: 8px; border: 2px solid var(--warning); text-align: center; margin-bottom: 12px; width: 80%; max-width: 240px; background: rgba(0,0,0,0.8); color: #fff; outline: none; pointer-events: auto;">
-            <button class="btn-action" style="margin-top: 0; padding: 10px 28px; font-size: 17px;" onclick="submitScore()">上傳稱號與成績</button>
+        <div id="score-submit-area" style="display: none; flex-direction: column; align-items: center; width: 100%; margin-top: 12px;">
+            <input type="text" id="player-name-input" placeholder="輸入大名留存稱號與紀錄..." maxlength="10" style="padding: 8px; font-size: 16px; border-radius: 8px; border: 2px solid var(--warning); text-align: center; margin-bottom: 10px; width: 80%; max-width: 240px; background: rgba(0,0,0,0.8); color: #fff; outline: none; pointer-events: auto;">
+            <button class="btn-action" style="margin-top: 0; padding: 10px 25px; font-size: 16px;" onclick="submitScore()">上傳稱號與成績</button>
         </div>
 
         <!-- 🏆 結算畫面：排行榜 -->
         <div id="ending-leaderboard" class="leaderboard" style="display: none;">
-            <div style="color: var(--warning); font-weight: 900; margin-bottom: 8px; font-size: 15px; letter-spacing: 1px;">🏆 最速通關排行榜</div>
-            <div id="ending-leaderboard-list" style="text-align: left; font-size: 13px;"></div>
+            <div style="color: var(--warning); font-weight: 900; margin-bottom: 6px; font-size: 14px; letter-spacing: 1px;">🏆 最速通關排行榜</div>
+            <div id="ending-leaderboard-list" style="text-align: left; font-size: 12px;"></div>
         </div>
 
         <button id="restart-btn" class="btn-action" onclick="restartGame()">重新連線</button>
@@ -305,12 +337,71 @@
     };
 
     // ==========================================
+    // 🏆 【成就系統 (LocalStorage 驅動)】
+    // ==========================================
+    const ACHIEVEMENTS_DATA = [
+        { id: 'ach_first_win', icon: '🏕️', name: '初入營林', desc: '成功完成一次營隊挑戰結營' },
+        { id: 'ach_speed_god', icon: '⚡', name: '光速傳說', desc: '解鎖「光速控場之神」稱號通關' },
+        { id: 'ach_high_hp', icon: '💖', name: '鋼鐵意志', desc: '以剩餘體力 10 點以上成功通關' },
+        { id: 'ach_all_classes', icon: '🎭', name: '全能導師', desc: '分別使用三種天賦職業成功通關過' }
+    ];
+
+    function checkAndUnlockAchievements(isVictory, timeUsed, endingTag, classKey) {
+        let achs = JSON.parse(localStorage.getItem('camp_achievements')) || {};
+        let classesUsed = JSON.parse(localStorage.getItem('camp_classes_used')) || [];
+        let newlyUnlocked = [];
+
+        if (isVictory) {
+            if (!achs['ach_first_win']) { achs['ach_first_win'] = true; newlyUnlocked.push('初入營林'); }
+            if (endingTag.includes('光速控場之神') && !achs['ach_speed_god']) { achs['ach_speed_god'] = true; newlyUnlocked.push('光速傳說'); }
+            if (currentMood >= 10 && !achs['ach_high_hp']) { achs['ach_high_hp'] = true; newlyUnlocked.push('鋼鐵意志'); }
+            
+            if (!classesUsed.includes(classKey)) {
+                classesUsed.push(classKey);
+                localStorage.setItem('camp_classes_used', JSON.stringify(classesUsed));
+            }
+            if (classesUsed.length >= 3 && !achs['ach_all_classes']) {
+                achs['ach_all_classes'] = true; newlyUnlocked.push('全能導師');
+            }
+        }
+        localStorage.setItem('camp_achievements', JSON.stringify(achs));
+
+        if (newlyUnlocked.length > 0) {
+            setTimeout(() => {
+                alert(`🎉 恭喜解鎖新成就：\n【${newlyUnlocked.join('、')}】\n快去主選單的「榮譽獎盃櫃」查看吧！`);
+            }, 600);
+        }
+    }
+
+    function openTrophyModal() {
+        let achs = JSON.parse(localStorage.getItem('camp_achievements')) || {};
+        let listHTML = '';
+        ACHIEVEMENTS_DATA.forEach(ach => {
+            let isUnlocked = achs[ach.id] === true;
+            listHTML += `
+                <div class="trophy-item ${isUnlocked ? 'unlocked' : ''}">
+                    <div class="trophy-icon">${ach.icon}</div>
+                    <div class="trophy-info">
+                        <div class="trophy-name">${ach.name} ${isUnlocked ? '✅' : '🔒'}</div>
+                        <div class="trophy-desc">${ach.desc}</div>
+                    </div>
+                </div>`;
+        });
+        document.getElementById('trophy-list').innerHTML = listHTML;
+        document.getElementById('trophy-modal').style.display = 'flex';
+    }
+
+    function closeTrophyModal() {
+        document.getElementById('trophy-modal').style.display = 'none';
+    }
+
+    // ==========================================
     // 🎭 【隊輔職業與天賦設定】
     // ==========================================
     const CLASSES = {
         athletic: {
             name: '體能怪物', titlePrefix: '體能狂',
-            maxMood: 15, speed: 0.38, walkStepsCost: 99999, // 走路不扣體力
+            maxMood: 15, speed: 0.38, walkStepsCost: 99999,
             wrongPenalty: -1, bonusHiddenScore: 0, showHint: false, luckyCrisis: false
         },
         empath: {
@@ -404,7 +495,7 @@
     let currentDialogIndex = 0;  
     
     let talkedTo = new Set();
-    let requiredNPCs = []; // 💡 改由下方根據地圖自動收集，改名也不會壞掉！
+    let requiredNPCs = [];
     let QUEST_GOAL = 12;
 
     let collectedSupplies = 0;
@@ -614,7 +705,6 @@
         }
     };
 
-    // 💡 自動讀取所有場景中的 NPC 名稱加入過關清單，未來改名也永遠不會卡關！
     for (let s in scenes) {
         for (let npc of scenes[s].npcs) {
             npc.gridX = npc.x; npc.gridY = npc.y;
@@ -627,7 +717,6 @@
     }
     QUEST_GOAL = requiredNPCs.length;
 
-    // 隨機洗牌陣列工具函數
     function shuffleArray(arr) {
         let copy = [...arr];
         for (let i = copy.length - 1; i > 0; i--) {
@@ -736,7 +825,7 @@
     function updateTimerUI() {
         const timerDisplay = document.getElementById('timer-display');
         timerDisplay.innerText = `⏱️ ${elapsedTime} 秒`;
-        timerDisplay.style.color = elapsedTime >= 90 ? 'var(--warning)' : '#fff';
+        timerDisplay.style.color = elapsedTime >= 120 ? 'var(--warning)' : '#fff';
     }
 
     function startTimer() {
@@ -747,8 +836,7 @@
             elapsedTime++; 
             updateTimerUI();
             
-            // 🚨 正計時第 15 秒與第 40 秒時觸發隨機動態突發危機
-            if ((elapsedTime === 15 && triggeredCrises === 0) || (elapsedTime === 40 && triggeredCrises === 1)) {
+            if ((elapsedTime === 20 && triggeredCrises === 0) || (elapsedTime === 55 && triggeredCrises === 1)) {
                 triggerRandomCrisis();
                 return;
             }
@@ -849,7 +937,6 @@
         if (currentMood <= 0) triggerGameOver("mood"); 
     }
 
-    // 檢查雙任務是否皆已完成
     function checkAllQuestsCompleted() {
         if (talkedTo.size >= QUEST_GOAL && collectedSupplies >= SUPPLY_GOAL && currentMood > 0 && !isDialogActive) {
             triggerVictory();
@@ -863,32 +950,32 @@
     // 🏅 【多重結局與稱號判定系統】
     // ==========================================
     function evaluateEnding(timeUsed) {
-        if (timeUsed <= 45 && currentHiddenScore >= 11) {
+        if (timeUsed <= 45 && currentHiddenScore >= 13) {
             return {
                 icon: '⚡', title: '光速控場之神！', tag: '【⚡光速控場之神】', color: '#00f2fe',
-                desc: '你以不可思議的極限速度擺平了 12 位學員幹部並找齊所有物資，同時兼顧完美的耐心與技巧！營隊歷史將永遠流傳你的神話！再五年！'
+                desc: '你以不可思議的極限速度擺平了所有學員幹部並找齊所有物資，同時兼顧完美的耐心與技巧！營隊歷史將永遠流傳你的神話！'
             };
-        } else if (currentHiddenScore >= 13) {
+        } else if (currentHiddenScore >= 15) {
             return {
                 icon: '👑', title: '零負評傳說隊輔！', tag: '【👑零負評傳說隊輔】', color: 'var(--warning)',
                 desc: '不僅完美解決所有人的問題，連突發危機也處理得滴水不漏！全場學員哭著捨不得你走，總籌直接跪求你明年繼續當幹部！'
             };
-        } else if (currentMood <= 3 && currentHiddenScore >= 9) {
+        } else if (currentMood <= 3 && currentHiddenScore >= 11) {
             return {
                 icon: '👼', title: '燃燒生命的天使！', tag: '【👼燃燒生命的天使】', color: '#ff9ff3',
                 desc: '為了讓營隊完美進行，你把最後一滴體力都奉獻給了孩子們。下營合照時你雖然累到靈魂出竅，但你是最溫柔的守護神！'
             };
-        } else if (currentMood >= 12 && currentHiddenScore >= 8) {
+        } else if (currentMood >= 12 && currentHiddenScore >= 10) {
             return {
                 icon: '😎', title: '優雅控場大師！', tag: '【😎優雅控場大師】', color: 'var(--success)',
                 desc: '別人在營隊裡跑得滿頭大汗，你卻一邊喝著珍奶、一邊優雅地把所有危機與物資順手解決，體力還多到可以再帶三個梯次！'
             };
-        } else if (currentHiddenScore <= 5) {
+        } else if (currentHiddenScore <= 6) {
             return {
                 icon: '🔥', title: '暴走鐵血教官！', tag: '【🔥爆走鐵血教官】', color: 'var(--danger)',
                 desc: '雖然在時間內走完了流程，但你一路吼小孩、放生幹部！全場學員看到你都嚇得發抖，堪稱營隊史上最凶狠的傳奇人物！'
             };
-        } else if (currentHiddenScore >= 8) {
+        } else if (currentHiddenScore >= 10) {
             return {
                 icon: '🏆', title: '優秀隊輔！', tag: '【🏆優秀隊輔】', color: 'var(--warning)',
                 desc: '面對各種失控場面與突發危機，你展現了極佳的抗壓性與成熟度，順利找齊物資並帶領小隊平安下營！'
@@ -938,6 +1025,9 @@
         finalTimeUsed = Math.max(1, elapsedTime);
         const result = evaluateEnding(finalTimeUsed);
         currentTitleTag = result.tag;
+
+        // 💡 觸發成就檢查與解鎖
+        checkAndUnlockAchievements(true, finalTimeUsed, result.tag, selectedClassKey);
 
         icon.innerText = result.icon;
         title.innerText = result.title;
