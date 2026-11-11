@@ -1031,10 +1031,15 @@
     // 🏅 【多重結局與稱號判定系統】
     // ==========================================
     function evaluateEnding(timeUsed) {
-        if (currentMood < 0) {
+        if (currentMood < 0 && currentHiddenScore >= 10) {
             return {
-                icon: '😵', title: '身體透支·過勞倒地！', tag: '【💀燃燒殆盡的社畜】', color: 'var(--danger)',
-                desc: '雖然你成功撐到最後完成了任務，但體力透支到了負分（分數：' + currentMood + '）！你在結營典禮最後一刻直接倒地昏迷，被救護車載走了...'
+                icon: '😵', title: '身體透支·過勞倒地！', tag: '【💀燃燒殆盡的隊輔】', color: 'var(--danger)',
+                desc: '雖然你成功撐到最後完成了任務，但體力透支了（分數：' + currentMood + '）！你在結業式最後一刻直接倒地昏迷，被救護車載走了...'
+            };
+        } else if (currentMood < 0 && currentHiddenScore < 6) {
+            return {
+                icon: '🤪', title: '身體透支·過勞倒地.營隊爆炸！', tag: '【☠️行走的大雷包】', color: 'var(--danger)',
+                desc: '雖然你成功撐到最後完成了任務，但體力透支了（分數：' + currentMood + '）！你在結業式最後一刻直接倒地昏迷，被救護車載走了...營隊還因為你的各項錯誤決策毀了'
             };
         } else if (timeUsed <= 45 && currentHiddenScore >= 13) {
             return {
