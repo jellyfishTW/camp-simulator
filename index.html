@@ -85,22 +85,20 @@
     /* 螢幕遮罩 */
     .overlay-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; text-align: center; backdrop-filter: blur(5px); animation: fadeIn 0.5s ease forwards; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .btn-action { margin-top: 20px; padding: 15px 40px; background: linear-gradient(90deg, var(--primary), #00f2fe); color: #fff; border-radius: 8px; cursor: pointer; font-size: 20px; font-weight: 900; box-shadow: 0 0 20px rgba(79, 172, 254, 0.5); pointer-events: auto; border: none; letter-spacing: 2px; }
+    .btn-action { margin-top: 30px; padding: 15px 40px; background: linear-gradient(90deg, var(--primary), #00f2fe); color: #fff; border-radius: 8px; cursor: pointer; font-size: 20px; font-weight: 900; box-shadow: 0 0 20px rgba(79, 172, 254, 0.5); pointer-events: auto; border: none; letter-spacing: 2px; }
     .btn-action:active { transform: scale(0.95); }
     .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
     @keyframes shake { 10%, 90% { transform: translate3d(-3px, 0, 0); } 20%, 80% { transform: translate3d(5px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
 
     /* 排行榜面板 */
-    #leaderboard {
-        display: none; margin-top: 15px; width: 90%; max-width: 350px;
+    .leaderboard {
+        margin-top: 20px; width: 90%; max-width: 350px;
         background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px;
         border: 1px solid var(--warning); box-sizing: border-box; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     }
-    
-    /* 💡 修復排行榜名字顏色的關鍵：加上 color: #ffffff; */
     .leaderboard-row {
         display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1);
-        padding-bottom: 8px; margin-bottom: 8px; font-size: 15px; color: #ffffff; 
+        padding-bottom: 8px; margin-bottom: 8px; font-size: 15px; color: #ffffff;
     }
     .leaderboard-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 
@@ -165,33 +163,44 @@
         <div id="dialog-hint">▼ 點擊繼續 (或點擊對話框)</div>
     </div>
     
+    <!-- 開始畫面 -->
     <div id="start-screen-overlay" class="overlay-screen" style="display: flex; background: rgba(20, 30, 40, 0.95); z-index: 200;">
         <div style="font-size: 70px; margin-bottom: 10px; filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.8));">🏕️</div>
         <div style="font-size: 35px; margin-bottom: 15px; font-weight: 900; letter-spacing: 2px; color: var(--primary);">營隊生存模擬器</div>
+        
         <div style="font-size: 15px; color: #a4b0be; text-align: left; background: rgba(255,255,255,0.05); padding: 15px 25px; border-radius: 8px; border-left: 4px solid var(--primary); line-height: 1.6; max-width: 320px;">
             <span style="color:#fff; font-weight:bold;">[操作]</span> 點擊遊戲畫面即可移動。<br>
             <span style="color:#fff; font-weight:bold;">[提示]</span> 每走 8 步會扣 1 點體力(HP)。<br>
-            <span style="color:var(--warning); font-weight:bold;">[隱藏考核]</span> 對話選擇將決定結營評價！
+            <span style="color:var(--warning); font-weight:bold;">[隱藏考核]</span> 對話選擇將決定下營評價！
         </div>
+
+        <!-- 🏆 開始畫面：即時排行榜 -->
+        <div class="leaderboard" style="display: block; margin-top: 20px;">
+            <div style="color: var(--warning); font-weight: 900; margin-bottom: 10px; font-size: 16px; letter-spacing: 1px;">🏆 目前最速排行榜</div>
+            <div id="start-leaderboard-list" style="text-align: left; font-size: 14px;">
+                <div style="text-align:center; color:#fff;">📡 資料載入中...</div>
+            </div>
+        </div>
+
         <button class="btn-action" onclick="startGame()">進入遊戲</button>
     </div>
 
-    <!-- 結局畫面 (加入自訂姓名輸入框與排行榜) -->
+    <!-- 結局畫面 -->
     <div id="ending-overlay" class="overlay-screen" style="background: rgba(15, 15, 20, 0.95);">
         <div id="ending-icon" style="font-size: 60px; margin-bottom: 15px;"></div>
         <div id="ending-title" style="font-size: 40px; margin-bottom: 15px; font-weight: 900;"></div>
         <div id="ending-desc" style="font-size: 16px; color: #dfe4ea; line-height: 1.6; max-width: 400px; padding: 0 20px;"></div>
         
-        <!-- 🏆 姓名輸入區塊 -->
+        <!-- 姓名輸入區塊 -->
         <div id="score-submit-area" style="display: none; flex-direction: column; align-items: center; width: 100%; margin-top: 20px;">
             <input type="text" id="player-name-input" placeholder="輸入大名留存紀錄..." maxlength="12" style="padding: 12px; font-size: 18px; border-radius: 8px; border: 2px solid var(--warning); text-align: center; margin-bottom: 15px; width: 80%; max-width: 250px; background: rgba(0,0,0,0.8); color: #fff; outline: none; pointer-events: auto;">
             <button class="btn-action" style="margin-top: 0; padding: 12px 30px; font-size: 18px;" onclick="submitScore()">上傳成績</button>
         </div>
 
-        <!-- 🏆 排行榜容器 -->
-        <div id="leaderboard">
+        <!-- 🏆 結算畫面：排行榜 -->
+        <div id="ending-leaderboard" class="leaderboard">
             <div style="color: var(--warning); font-weight: 900; margin-bottom: 10px; font-size: 16px; letter-spacing: 1px;">🏆 最速通關排行榜</div>
-            <div id="leaderboard-list" style="text-align: left; font-size: 14px;"></div>
+            <div id="ending-leaderboard-list" style="text-align: left; font-size: 14px;"></div>
         </div>
 
         <button id="restart-btn" class="btn-action" onclick="restartGame()">重新連線</button>
@@ -407,7 +416,7 @@
                     x: 12, y: 7, icon: '👨‍🦱', imgKey: 'npc_man', title: '幹部', name: '邱曉昕', canMove: false, 
                     msgs: [
                         '我們督導說要請你們開始雨備方案', '你說沒有下雨？',
-                        { question: '面對突如其來的指令，你決定？',
+                        { question: '面對突如突來的指令，你決定？',
                           choices: [
                             { text: '直接果斷切換雨備', moodChange: -1, hiddenScore: 0, reply: '好的，大家動起來！(覺得可惜 心情-1)' },
                             { text: '耐心解釋真的沒下雨', moodChange: -3, hiddenScore: -1, reply: '可是督導說... (溝通無效，心累 心情 -3)' }
@@ -428,43 +437,78 @@
     }
 
     // ==========================================
-    // 🏆 【全球連線排行榜系統】
+    // 🏆 【全球連線排行榜系統 (包含強力防錯機制)】
     // ==========================================
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxFVE6pt6QhRL6_mHvMoUnS84wKcfTwEqiotoUNi8DrA_WdZvJR0dVLkXs4FmhvwLlp/exec';
 
+    // 負責渲染排行榜畫面
+    function renderLeaderboard(board, elementId) {
+        let listHTML = '';
+        if (!board || board.length === 0) {
+            listHTML = '<div style="text-align:center; color:#a4b0be; padding-top: 5px;">目前還沒有紀錄，你就是第一名！</div>';
+        } else {
+            board.forEach((entry, index) => {
+                let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
+                let safeName = entry.name || '無名隊輔';
+                listHTML += `
+                    <div class="leaderboard-row">
+                        <span>${medal} <span style="font-weight:bold; color:#fff;">${safeName}</span></span>
+                        <span style="color: var(--success); font-weight: bold;">${entry.time} 秒</span>
+                    </div>`;
+            });
+        }
+        document.getElementById(elementId).innerHTML = listHTML;
+    }
+
+    // 網頁剛載入時，抓取目前的排行榜並顯示在開始畫面
+    function loadStartLeaderboard() {
+        fetch(WEB_APP_URL)
+        .then(res => res.text())
+        .then(text => {
+            try {
+                let board = JSON.parse(text);
+                renderLeaderboard(board, 'start-leaderboard-list');
+            } catch(e) {
+                console.error("解析失敗，可能試算表名稱或權限錯誤:", text);
+                document.getElementById('start-leaderboard-list').innerHTML = '<div style="text-align:center; color:var(--danger);">❌ 讀取失敗，請確認 GAS 權限為「所有人」</div>';
+            }
+        })
+        .catch(err => {
+            console.error("連線錯誤:", err);
+            document.getElementById('start-leaderboard-list').innerHTML = '<div style="text-align:center; color:var(--danger);">❌ 無法連線至資料庫</div>';
+        });
+    }
+
+    // 立即執行載入
+    loadStartLeaderboard();
+
+    // 玩家通關後按下「上傳成績」觸發
     function submitScore() {
         let nameInput = document.getElementById('player-name-input').value.trim();
         let playerName = nameInput === "" ? "無名隊輔" : nameInput;
         
         document.getElementById('score-submit-area').style.display = 'none';
-        document.getElementById('leaderboard').style.display = 'block';
+        document.getElementById('ending-leaderboard').style.display = 'block';
         document.getElementById('restart-btn').style.display = 'block';
-        document.getElementById('leaderboard-list').innerHTML = '<div style="text-align:center; padding: 10px; color:#fff;">📡 成績上傳雲端中...</div>';
+        document.getElementById('ending-leaderboard-list').innerHTML = '<div style="text-align:center; padding: 10px; color:#fff;">📡 成績上傳雲端中...</div>';
 
+        // ⚠️ 終極防禦：絕對不加任何 headers，完全避開 CORS 的 OPTIONS 阻擋
         fetch(WEB_APP_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ name: playerName, time: finalTimeUsed })
         })
-        .then(res => res.json())
-        .then(board => {
-            let listHTML = '';
-            if (board.length === 0) {
-                listHTML = '<div style="text-align:center; color:#a4b0be;">目前還沒有紀錄，你就是第一名！</div>';
-            } else {
-                board.forEach((entry, index) => {
-                    let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
-                    listHTML += `
-                        <div class="leaderboard-row">
-                            <span>${medal} <span style="font-weight:bold;">${entry.name}</span></span>
-                            <span style="color: var(--success); font-weight: bold;">${entry.time} 秒</span>
-                        </div>`;
-                });
+        .then(res => res.text())
+        .then(text => {
+            try {
+                let board = JSON.parse(text);
+                renderLeaderboard(board, 'ending-leaderboard-list');
+            } catch(e) {
+                console.error("解析失敗，可能試算表名稱或權限錯誤:", text);
+                document.getElementById('ending-leaderboard-list').innerHTML = '<div style="text-align:center; color:var(--danger);">❌ 上傳失敗，GAS 部署權限或試算表名稱錯誤</div>';
             }
-            document.getElementById('leaderboard-list').innerHTML = listHTML;
         })
         .catch(err => {
-            document.getElementById('leaderboard-list').innerHTML = '<div style="text-align:center; padding: 10px; color:var(--danger);">❌ 連線失敗，無法取得排行榜資料</div>';
+            document.getElementById('ending-leaderboard-list').innerHTML = '<div style="text-align:center; padding: 10px; color:var(--danger);">❌ 連線失敗，無法取得排行榜資料</div>';
             console.error("排行榜上傳錯誤:", err);
         });
     }
@@ -495,7 +539,7 @@
             if (isGameOver || !isGameStarted || isDialogActive) return; 
             remainingTime--; updateTimerUI();
             
-            if (remainingTime === 10) logSystem("[警告] 距離結營只剩 10 秒！", "damage");
+            if (remainingTime === 10) logSystem("[警告] 距離下營只剩 10 秒！", "damage");
             if (remainingTime <= 0) triggerGameOver("timeup");
         }, 1000);
     }
@@ -534,12 +578,12 @@
         const icon = document.getElementById('ending-icon'); const title = document.getElementById('ending-title'); const desc = document.getElementById('ending-desc');
         
         document.getElementById('score-submit-area').style.display = 'none';
-        document.getElementById('leaderboard').style.display = 'none';
+        document.getElementById('ending-leaderboard').style.display = 'none';
         document.getElementById('restart-btn').style.display = 'block';
 
         if (reason === "timeup") {
             icon.innerText = '⏳'; title.innerText = '任務超時'; title.style.color = 'var(--warning)';
-            desc.innerHTML = '動作太慢了，營隊大混亂，進度嚴重落後...<br>結營檢討會被電爆了。';
+            desc.innerHTML = '動作太慢了，營隊大混亂，進度嚴重落後...<br>下營檢討會被電爆了。';
         } else {
             icon.innerText = '💀'; title.innerText = '體力耗盡'; title.style.color = 'var(--danger)';
             desc.innerHTML = '小學員暴走、進度落後，你累癱在營隊中。<br>無法繼續勝任隊輔工作。';
@@ -560,12 +604,12 @@
             icon.innerText = '🏆'; title.innerText = '傳說級隊輔！'; title.style.color = 'var(--warning)';
             desc.innerHTML = `通關時間：<span style="color:var(--success); font-weight:bold;">${finalTimeUsed} 秒</span><br>隱藏考核：<span style="color:var(--warning);">${currentHiddenScore}/${MAX_HIDDEN_SCORE}</span><br>你成功解決了所有危機，而且處事非常成熟！大家都覺得你是一位超級優秀的隊輔！`;
         } else {
-            icon.innerText = '😅'; title.innerText = '勉強結營...'; title.style.color = '#a4b0be';
+            icon.innerText = '😅'; title.innerText = '勉強下營...'; title.style.color = '#a4b0be';
             desc.innerHTML = `通關時間：<span style="color:var(--success); font-weight:bold;">${finalTimeUsed} 秒</span><br>隱藏考核：<span style="color:var(--danger);">${currentHiddenScore}/${MAX_HIDDEN_SCORE}</span><br>雖然撐過了營隊，但處理危機的方式太過急躁。下次再多點耐心吧！`;
         }
         
         document.getElementById('score-submit-area').style.display = 'flex';
-        document.getElementById('leaderboard').style.display = 'none';
+        document.getElementById('ending-leaderboard').style.display = 'none';
         document.getElementById('restart-btn').style.display = 'none';
         document.getElementById('player-name-input').value = ''; 
         
@@ -577,8 +621,11 @@
     function restartGame() {
         currentMood = MAX_MOOD; stepCount = 0; talkedTo.clear(); currentHiddenScore = MAX_HIDDEN_SCORE; remainingTime = GAME_TIME_SECONDS; 
         document.getElementById('timer-display').style.color = '#fff';
-        document.getElementById('leaderboard').style.display = 'none';
+        document.getElementById('ending-leaderboard').style.display = 'none';
         document.getElementById('score-submit-area').style.display = 'none';
+        
+        // 重新載入開始畫面的排行榜
+        loadStartLeaderboard();
         
         updateQuestUI(); updateMoodUI(); floatingTexts = []; currentScene = 'classroom'; 
         player.gridX = 7; player.gridY = 7; player.pixelX = 7*TILE_SIZE; player.pixelY = 7*TILE_SIZE; player.facing = 'down';
