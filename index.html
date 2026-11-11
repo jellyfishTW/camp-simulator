@@ -276,12 +276,12 @@
         <div id="ending-badge">獲得稱號：【傳說隊輔】</div>
         <div id="ending-desc" style="font-size: 14px; color: #dfe4ea; line-height: 1.5; max-width: 420px; padding: 0 15px;"></div>
         
-        <!-- 姓名與分享成績區塊 -->
+        <!-- 姓名與 JPG 戰績卡片下載區塊 -->
         <div id="score-submit-area" style="display: none; flex-direction: column; align-items: center; width: 100%; margin-top: 12px;">
             <input type="text" id="player-name-input" placeholder="輸入大名留存稱號與紀錄..." maxlength="10" style="padding: 8px; font-size: 16px; border-radius: 8px; border: 2px solid var(--warning); text-align: center; margin-bottom: 10px; width: 80%; max-width: 240px; background: rgba(0,0,0,0.8); color: #fff; outline: none; pointer-events: auto;">
             <div style="display: flex; gap: 8px; width: 100%; justify-content: center; flex-wrap: wrap;">
-                <button class="btn-action" style="margin-top: 0; padding: 10px 20px; font-size: 15px;" onclick="submitScore()">上傳雲端排行</button>
-                <button class="btn-action" style="margin-top: 0; padding: 10px 20px; font-size: 15px; background: linear-gradient(90deg, #2ed573, #7bed9f);" onclick="copyScoreCard()">📋 複製戰績卡</button>
+                <button class="btn-action" style="margin-top: 0; padding: 10px 18px; font-size: 14px;" onclick="submitScore()">上傳雲端排行</button>
+                <button class="btn-action" style="margin-top: 0; padding: 10px 18px; font-size: 14px; background: linear-gradient(90deg, #ff4757, #ff6b81);" onclick="downloadScoreCardJPG()">📥 下載戰績 JPG</button>
             </div>
         </div>
 
@@ -340,7 +340,7 @@
     };
 
     // ==========================================
-    // 🏆 【成就系統與戰績卡片複製】
+    // 🏆 【成就系統與 JPG 戰績卡片匯出】
     // ==========================================
     const ACHIEVEMENTS_DATA = [
         { id: 'ach_first_win', icon: '🏕️', name: '初入營林', desc: '成功完成一次營隊挑戰結營' },
@@ -398,18 +398,56 @@
         document.getElementById('trophy-modal').style.display = 'none';
     }
 
-    // 📋 複製戰績卡片分享
-    function copyScoreCard() {
-        let text = `🏕️【營隊生存模擬器】結算報告\n👑 稱號：${currentTitleTag}\n🎭 職業：${CLASSES[selectedClassKey].name}\n⏱️ 總計耗時：${finalTimeUsed} 秒\n⭐ 隱藏考核：${currentHiddenScore} 分\n❤️ 剩餘體力：${currentMood}/${currentMaxMood}\n快來挑戰成為傳說級隊輔！`;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert('📋 戰績卡片已複製到剪貼簿！快去貼給朋友看看吧！');
-            }).catch(() => {
-                prompt('請手動複製以下戰績文字：', text);
-            });
-        } else {
-            prompt('請手動複製以下戰績文字：', text);
-        }
+    // 📥 動態生成並下載戰績 JPG 卡片
+    function downloadScoreCardJPG() {
+        let tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 600;
+        tempCanvas.height = 400;
+        let tCtx = tempCanvas.getContext('2d');
+
+        // 背景色漸層
+        let grad = tCtx.createLinearGradient(0, 0, 600, 400);
+        grad.addColorStop(0, '#1e272e');
+        grad.addColorStop(1, '#0f141e');
+        tCtx.fillStyle = grad;
+        tCtx.fillRect(0, 0, 600, 400);
+
+        // 外框
+        tCtx.strokeStyle = '#4facfe';
+        tCtx.lineWidth = 4;
+        tCtx.strokeRect(15, 15, 570, 370);
+
+        // 標題
+        tCtx.fillStyle = '#ffa502';
+        tCtx.font = '900 26px "微軟正黑體", sans-serif';
+        tCtx.textAlign = 'center';
+        tCtx.fillText('🏕️ 營隊生存模擬器 - 結算戰績卡', 300, 65);
+
+        // 稱號
+        tCtx.fillStyle = '#ff6b6b';
+        tCtx.font = 'bold 22px "微軟正黑體", sans-serif';
+        tCtx.fillText(currentTitleTag, 300, 110);
+
+        // 數據內容
+        tCtx.fillStyle = '#ffffff';
+        tCtx.font = '18px "微軟正黑體", sans-serif';
+        tCtx.textAlign = 'left';
+        tCtx.fillText(`🎭 隊輔職業： ${CLASSES[selectedClassKey].name}`, 80, 170);
+        tCtx.fillText(`⏱️ 總計耗時： ${finalTimeUsed} 秒`, 80, 215);
+        tCtx.fillText(`⭐ 隱藏考核： ${currentHiddenScore} 分`, 80, 260);
+        tCtx.fillText(`❤️ 剩餘體力： ${currentMood} / ${currentMaxMood}`, 80, 305);
+
+        // 底部版權
+        tCtx.fillStyle = '#a4b0be';
+        tCtx.font = '13px "微軟正黑體", sans-serif';
+        tCtx.textAlign = 'center';
+        tCtx.fillText('GitHub Pages | 營隊生存模擬器 MMO 旗艦版', 300, 355);
+
+        // 觸發下載 JPG
+        let link = document.createElement('a');
+        link.download = `camp_score_${finalTimeUsed}s.jpg`;
+        link.href = tempCanvas.toDataURL('image/jpeg', 0.92);
+        link.click();
     }
 
     // ==========================================
@@ -808,7 +846,7 @@
             }
         })
         .catch(() => {
-            document.getElementById('ending-leaderboard-list').innerHTML = '<div style="text-align:center; padding: 10px; color:var(--danger);">❌ 連線失敗</div>';
+            document.getElementById('ending-leaderboard-list').innerHTML = '<div style="text-align:center; color:var(--danger);">❌ 連線失敗</div>';
         });
     }
 
