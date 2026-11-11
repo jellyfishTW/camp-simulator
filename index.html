@@ -349,7 +349,7 @@
         { id: 'ach_all_classes', icon: '🎭', name: '全能導師', desc: '分別使用三種天賦職業成功通關過' }
     ];
 
-    let lastEndingResult = null; // 儲存當前局的評價物件
+    let lastEndingResult = null;
 
     function checkAndUnlockAchievements(isVictory, timeUsed, endingTag, classKey) {
         let achs = JSON.parse(localStorage.getItem('camp_achievements')) || {};
@@ -950,7 +950,7 @@
                 }
 
                 changeMood(finalMoodCost);
-                if (isGameOver) return;
+                if (isGameOver) return; // 體力小於0不再直接死亡，此處僅防呆
 
                 if (choice.timePenalty !== 0) {
                     elapsedTime = Math.max(0, elapsedTime + choice.timePenalty);
@@ -979,29 +979,47 @@
 
     function updateMoodUI() {
         const bar = document.getElementById('hp-bar'); const text = document.getElementById('mood-text');
-        let percentage = Math.max(0, (currentMood / currentMaxMood) * 100);
-        bar.style.width = percentage + '%'; text.innerText = `${currentMood}/${currentMaxMood}`;
-        if (currentMood > (currentMaxMood/2)) bar.style.background = 'var(--success)'; 
-        else if (currentMood > (currentMaxMood/4)) bar.style.background = 'var(--warning)'; 
-        else bar.style.background = 'var(--danger)'; 
+        let percentage = Math.max(0, Math.min(100, (currentMood / currentMaxMood) * 100));
+        bar.style.width = percentage + '%'; 
+        text.innerText = `${currentMood}/${currentMaxMood}`;
+        
+        if (currentMood < 0) {
+            text.style.color = 'var(--danger)';
+            bar.style.background = 'var(--danger)';
+        } else if (currentMood > (currentMaxMood/2)) {
+            text.style.color = '#a4b0be';
+            bar.style.background = 'var(--success)'; 
+        } else if (currentMood > (currentMaxMood/4)) {
+            text.style.color = '#a4b0be';
+            bar.style.background = 'var(--warning)'; 
+        } else {
+            text.style.color = '#a4b0be';
+            bar.style.background = 'var(--danger)'; 
+        }
     }
 
+    // 💡 改動：心情扣完不會死，允許進入負分，並進入過勞狀態
     function changeMood(amount, sourceX = player.pixelX, sourceY = player.pixelY) {
         if (amount === 0) return;
-        currentMood = Math.min(currentMaxMood, currentMood + amount); updateMoodUI();
+        currentMood = currentMood + amount; 
+        if (currentMood > currentMaxMood) currentMood = currentMaxMood;
+        updateMoodUI();
         
-        let color = amount > 0 ? '#2ed573' : '#ff4757'; let text = amount > 0 ? `+${amount}` : `${amount}`;
+        let color = amount > 0 ? '#2ed573' : '#ff4757'; 
+        let text = amount > 0 ? `+${amount}` : `${amount}`;
         addFloatingText(sourceX + TILE_SIZE/2, sourceY, text, color);
 
         if (amount > 0) logSystem(`[恢復] 獲得了 ${amount} 點體力`, "heal");
         else logSystem(`[扣除] 失去了 ${Math.abs(amount)} 點體力`, "damage");
 
         if (amount <= -3) triggerShake();
-        if (currentMood <= 0) triggerGameOver("mood"); 
+        if (currentMood <= 0) {
+            logSystem(`[警告] 體力已耗盡！你進入了「過勞狀態」，移動速度大幅下降！`, "damage");
+        }
     }
 
     function checkAllQuestsCompleted() {
-        if (talkedTo.size >= QUEST_GOAL && collectedSupplies >= SUPPLY_GOAL && currentMood > 0 && !isDialogActive) {
+        if (talkedTo.size >= QUEST_GOAL && collectedSupplies >= SUPPLY_GOAL && !isDialogActive) {
             triggerVictory();
         } else if (talkedTo.size >= QUEST_GOAL && collectedSupplies < SUPPLY_GOAL) {
             logSystem(`[提示] 還差 ${SUPPLY_GOAL - collectedSupplies} 個遺失物資未找齊！`, "info");
@@ -1013,7 +1031,12 @@
     // 🏅 【多重結局與稱號判定系統】
     // ==========================================
     function evaluateEnding(timeUsed) {
-        if (timeUsed <= 45 && currentHiddenScore >= 13) {
+        if (currentMood < 0) {
+            return {
+                icon: '😵', title: '身體透支·過勞倒地！', tag: '【💀燃燒殆盡的社畜】', color: 'var(--danger)',
+                desc: '雖然你成功撐到最後完成了任務，但體力透支到了負分（分數：' + currentMood + '）！你在結營典禮最後一刻直接倒地昏迷，被救護車載走了...'
+            };
+        } else if (timeUsed <= 45 && currentHiddenScore >= 13) {
             return {
                 icon: '⚡', title: '光速控場之神！', tag: '【⚡光速控場之神】', color: '#00f2fe',
                 desc: '你以不可思議的極限速度擺平了所有學員幹部並找齊所有物資，同時兼顧完美的耐心與技巧！營隊歷史將永遠流傳你的神話！'
@@ -1088,7 +1111,7 @@
         finalTimeUsed = Math.max(1, elapsedTime);
         const result = evaluateEnding(finalTimeUsed);
         currentTitleTag = result.tag;
-        lastEndingResult = result; // 記錄評價結果供 JPG 卡片使用
+        lastEndingResult = result; 
 
         checkAndUnlockAchievements(true, finalTimeUsed, result.tag, selectedClassKey);
 
@@ -1328,10 +1351,13 @@
         const scene = scenes[currentScene];
         const cls = CLASSES[selectedClassKey];
         
+        // 💡 改動：當心情小於等於 0 (過勞狀態)，移動速度變為原本的 1/3
+        let currentSpeed = currentMood <= 0 ? cls.speed / 3 : cls.speed;
+        
         if (isMoving && pathQueue.length > 0) {
             let targetX = pathQueue[0].x * TILE_SIZE; let targetY = pathQueue[0].y * TILE_SIZE;
-            player.pixelX = lerp(player.pixelX, targetX, cls.speed); 
-            player.pixelY = lerp(player.pixelY, targetY, cls.speed);
+            player.pixelX = lerp(player.pixelX, targetX, currentSpeed); 
+            player.pixelY = lerp(player.pixelY, targetY, currentSpeed);
             player.facing = pathQueue[0].dir;
 
             if (Math.abs(player.pixelX - targetX) < 1.5 && Math.abs(player.pixelY - targetY) < 1.5) {
