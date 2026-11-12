@@ -1276,7 +1276,7 @@
         let score = Math.min(100, Math.max(25, Math.round(rawScore)));
         let grade = score >= 95 ? 'S+' : score >= 90 ? 'S' : score >= 80 ? 'A' : score >= 70 ? 'B' : 'C';
 
-        if (currentMood < 0) {
+        if (currentMood < 0 && currentHiddenScore >= 5) {
             return {
                 icon: '😵', title: '身體透支·過勞倒地！', tag: '【💀燃燒殆盡的天兵】', color: 'var(--danger)',
                 score: score, grade: grade,
