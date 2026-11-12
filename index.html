@@ -1282,7 +1282,7 @@
                 score: score, grade: grade,
                 desc: '雖然你成功撐到最後完成了任務，但體力透支到了負分（分數：' + currentMood + '）！你在結業式最後一刻直接倒地昏迷，被救護車載走了...'
             };
-        else if (currentMood < 0 && currentHiddenScore < 5) {
+        } else if (currentMood < 0 && currentHiddenScore < 5) {
             return {
                 icon: '☠️', title: '身體透支·過勞倒地.營隊爆炸！', tag: '【💀頂級大雷包】', color: 'var(--danger)',
                 score: score, grade: grade,
