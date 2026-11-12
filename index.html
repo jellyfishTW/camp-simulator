@@ -1054,10 +1054,9 @@
 
     loadStartLeaderboard();
 
-    function submitScore() {
+        function submitScore() {
         let nameInput = document.getElementById('player-name-input').value.trim();
         let rawName = nameInput === "" ? "無名隊輔" : nameInput;
-        let fullPlayerTitleName = `${currentTitleTag}${rawName}`;
         
         document.getElementById('score-submit-area').style.display = 'none';
         document.getElementById('ending-leaderboard').style.display = 'flex';
@@ -1068,7 +1067,7 @@
         fetch(WEB_APP_URL, {
             method: 'POST',
             body: JSON.stringify({ 
-                name: fullPlayerTitleName, 
+                name: rawName, // 👈 這裡改傳送純名字
                 time: finalTimeUsed, 
                 level: playerLevel 
             })
