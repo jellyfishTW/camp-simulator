@@ -170,18 +170,6 @@
         margin-bottom: 8px; box-shadow: 0 0 15px rgba(255, 107, 107, 0.6); letter-spacing: 1px;
     }
 
-    /* 🖼️ 手機長按保存圖片的彈窗樣式 */
-    #image-save-modal {
-        display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
-        background: rgba(0, 0, 0, 0.92); z-index: 99999; flex-direction: column;
-        justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
-        backdrop-filter: blur(5px);
-    }
-    #share-image-preview {
-        max-width: 95%; max-height: 70dvh; border: 2px solid var(--warning);
-        border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); object-fit: contain;
-    }
-
     /* ================= 📱 手機版排版優化 ================= */
     @media (max-width: 768px) {
         #hud-container { padding: 10px 5px; }
@@ -348,13 +336,6 @@
 
         <button id="restart-btn" class="btn-action" onclick="restartGame()">重新連線</button>
     </div>
-</div>
-
-<!-- 🖼️ 手機長按保存圖片彈窗 -->
-<div id="image-save-modal">
-    <div style="color: #feca57; font-weight: 900; font-size: 18px; margin-bottom: 10px; letter-spacing: 1px;">📸 長按下方圖片即可保存</div>
-    <img id="share-image-preview" src="" alt="戰績卡">
-    <button class="btn-action" style="margin-top: 20px; padding: 10px 30px; font-size: 15px;" onclick="document.getElementById('image-save-modal').style.display='none'">關閉視窗</button>
 </div>
 
 <script>
@@ -558,21 +539,10 @@
         tCtx.strokeStyle = '#e1b12c'; tCtx.lineWidth = 6; tCtx.strokeRect(25, 25, 750, 500);
         tCtx.strokeStyle = '#4facfe'; tCtx.lineWidth = 2; tCtx.strokeRect(33, 33, 734, 484);
 
-        // 標題列
+        // 標題列背景
         tCtx.fillStyle = 'rgba(0, 0, 0, 0.4)'; tCtx.fillRect(35, 35, 730, 55);
-        tCtx.fillStyle = '#fbc531'; tCtx.font = '900 24px "微軟正黑體", sans-serif';
-        tCtx.textAlign = 'center'; tCtx.fillText('⚔️ 冒險者結算面板 (ADVENTURER STATUS) ⚔️', 400, 70);
 
-        // 左側面板
-        tCtx.fillStyle = 'rgba(10, 20, 40, 0.7)'; tCtx.fillRect(55, 110, 260, 385);
-        tCtx.strokeStyle = '#fbc531'; tCtx.lineWidth = 2; tCtx.strokeRect(55, 110, 260, 385);
-        tCtx.fillStyle = '#1e272e'; tCtx.fillRect(85, 135, 200, 150);
-        tCtx.strokeStyle = '#4facfe'; tCtx.strokeRect(85, 135, 200, 150);
-
-        let activeSkin = SKINS_DATA.find(s => s.id === currentSkinId) || SKINS_DATA[0];
-        tCtx.font = '60px sans-serif'; tCtx.fillText(activeSkin.icon, 185, 230);
-
-        // ✨ 新增：自動縮小字體的工具函式（解決文字超出版面的問題）
+        // ✨ 自動縮小字體的工具函式
         function drawFittedText(text, x, y, maxWidth, maxFontSize, fontWeight, color, align = 'center') {
             let fontSize = maxFontSize;
             tCtx.font = `${fontWeight} ${fontSize}px "微軟正黑體", "PingFang TC", "Microsoft JhengHei", sans-serif`;
@@ -584,6 +554,18 @@
             tCtx.textAlign = align;
             tCtx.fillText(text, x, y);
         }
+
+        // 使用 drawFittedText 繪製標題，限制最大寬度為 680，確保在兩側邊框內
+        drawFittedText('⚔️ 隊輔結算 ⚔️', 400, 70, 680, 24, '900', '#fbc531', 'center');
+
+        // 左側面板
+        tCtx.fillStyle = 'rgba(10, 20, 40, 0.7)'; tCtx.fillRect(55, 110, 260, 385);
+        tCtx.strokeStyle = '#fbc531'; tCtx.lineWidth = 2; tCtx.strokeRect(55, 110, 260, 385);
+        tCtx.fillStyle = '#1e272e'; tCtx.fillRect(85, 135, 200, 150);
+        tCtx.strokeStyle = '#4facfe'; tCtx.strokeRect(85, 135, 200, 150);
+
+        let activeSkin = SKINS_DATA.find(s => s.id === currentSkinId) || SKINS_DATA[0];
+        tCtx.font = '60px sans-serif'; tCtx.fillText(activeSkin.icon, 185, 230);
 
         // 左側：等級職業、名字、稱號 (使用 drawFittedText 限制寬度為 220)
         drawFittedText(`[ Lv.${playerLevel} ${CLASSES[selectedClassKey].name} ]`, 185, 315, 220, 16, 'bold', '#00d2d3');
@@ -622,22 +604,21 @@
         tCtx.fillStyle = '#718093'; tCtx.font = '12px "微軟正黑體", sans-serif'; tCtx.textAlign = 'center';
         tCtx.fillText('CAMP COUNSELOR SURVIVAL SIMULATOR - JRPG EDITION', 400, 520);
 
-        // ✨ 判斷是否為手機裝置
-        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        let dataUrl = tempCanvas.toDataURL('image/jpeg', 0.95);
-
-        if (isMobile) {
-            // 手機板：顯示長按保存的彈窗
-            let img = document.getElementById('share-image-preview');
-            img.src = dataUrl;
-            document.getElementById('image-save-modal').style.display = 'flex';
-        } else {
-            // 電腦版：直接下載
+        // ✨ 將 Canvas 轉成 Blob 並直接觸發下載（支援手機/電腦）
+        tempCanvas.toBlob(function(blob) {
+            let url = URL.createObjectURL(blob);
             let link = document.createElement('a');
             link.download = `jrpg_status_${finalTimeUsed}s.jpg`;
-            link.href = dataUrl;
+            link.href = url;
+            
+            // 為了相容 Safari / Webview，需將 link 加入 DOM 後觸發
+            document.body.appendChild(link);
             link.click();
-        }
+            document.body.removeChild(link);
+            
+            // 釋放記憶體
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, 'image/jpeg', 0.95);
     }
 
     // ==========================================
@@ -676,23 +657,23 @@
             title: '🚨 突發危機：便當送錯了！',
             question: '廠商把素食便當送成魚排便當，海鮮過敏的學員快餓昏了，你該怎麼辦？',
             choices: [
-                { text: '假裝沒看到，吃一下沒關係', moodChange: -2, timePenalty: 5, hiddenScore: -1, reply: '學員全身發癢，送急診 (體力 +1, 耗時 +5秒)' },
-                { text: '先拿餅乾給他吃', moodChange: 0, timePenalty: 0, hiddenScore: 1, best: true, reply: '學員感動到痛哭流涕！' }
+                { text: '假裝沒看到，吃一下沒關係', moodChange: 1, timePenalty: 5, hiddenScore: -1, reply: '學員全身發癢，送急診 (體力 +1, 耗時 +5秒)' },
+                { text: '先拿餅乾給他吃', moodChange: -2, timePenalty: 0, hiddenScore: 1, best: true, reply: '學員感動到痛哭流涕！' }
             ]
         },
         {
             title: '🚨 突發危機：午後大雷雨！',
             question: '外面突然下起狂風暴雨，走廊上的大地遊戲道具快被淋濕了！',
             choices: [
-                { text: '站在屋簷下指揮學員去收', moodChange: -2, timePenalty: 5, hiddenScore: -1, reply: '學員越收越亂，差點滑倒！' },
-                { text: '安頓好學員，立刻搶救器材', moodChange: 0, timePenalty: -3, hiddenScore: 1, best: true, reply: '全身淋濕但保住了器材！' }
+                { text: '站在屋簷下指揮學員去收', moodChange: 0, timePenalty: 5, hiddenScore: -1, reply: '學員越收越亂，差點滑倒！' },
+                { text: '安頓好學員，立刻搶救器材', moodChange: -2, timePenalty: -3, hiddenScore: 1, best: true, reply: '全身淋濕但保住了器材！' }
             ]
         },
         {
             title: '🚨 突發危機：音控設備大爆音！',
             question: '教室麥克風突然發出刺耳尖叫聲，全場學員摀著耳朵躁動！',
             choices: [
-                { text: '安撫學員並協助調整設備', moodChange: 0, timePenalty: -4, hiddenScore: 1, best: true, reply: '危機完美解除！' },
+                { text: '安撫學員並協助調整設備', moodChange: -2, timePenalty: -4, hiddenScore: 1, best: true, reply: '危機完美解除！' },
                 { text: '在台下跟著一起摀耳朵', moodChange: -1, timePenalty: 4, hiddenScore: -1, reply: '場面尷尬冷場了好久...' }
             ]
         },
@@ -701,7 +682,7 @@
             question: '有學員吃飽亂跑突然臉色發白，眼看就要吐在地板上了！',
             choices: [
                 { text: '開始尖叫逃跑', moodChange: -1, timePenalty: 6, hiddenScore: -1, reply: '地板慘不忍睹...' },
-                { text: '冷靜拿拖把清理乾淨', moodChange: 0, timePenalty: -2, hiddenScore: 1, best: true, reply: '滿分危機處理！' }
+                { text: '冷靜拿拖把清理乾淨', moodChange: -2, timePenalty: -2, hiddenScore: 1, best: true, reply: '滿分危機處理！' }
             ]
         }
     ];
