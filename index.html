@@ -407,36 +407,30 @@
         tempCanvas.height = 430;
         let tCtx = tempCanvas.getContext('2d');
 
-        // 背景色漸層
         let grad = tCtx.createLinearGradient(0, 0, 600, 430);
         grad.addColorStop(0, '#1e272e');
         grad.addColorStop(1, '#0f141e');
         tCtx.fillStyle = grad;
         tCtx.fillRect(0, 0, 600, 430);
 
-        // 外框
         tCtx.strokeStyle = '#4facfe';
         tCtx.lineWidth = 4;
         tCtx.strokeRect(15, 15, 570, 400);
 
-        // 標題
         tCtx.fillStyle = '#ffa502';
         tCtx.font = '900 24px "微軟正黑體", sans-serif';
         tCtx.textAlign = 'center';
         tCtx.fillText('🏕️ 營隊生存模擬器 - 結算戰績卡', 300, 55);
 
-        // 綜合評價
         let ratingTitle = lastEndingResult ? lastEndingResult.title : '優秀隊輔';
         tCtx.fillStyle = '#2ed573';
         tCtx.font = 'bold 22px "微軟正黑體", sans-serif';
         tCtx.fillText(`🌟 綜合評價：${ratingTitle}`, 300, 95);
 
-        // 稱號
         tCtx.fillStyle = '#ff6b6b';
         tCtx.font = 'bold 16px "微軟正黑體", sans-serif';
         tCtx.fillText(currentTitleTag, 300, 130);
 
-        // 數據內容
         tCtx.fillStyle = '#ffffff';
         tCtx.font = '17px "微軟正黑體", sans-serif';
         tCtx.textAlign = 'left';
@@ -445,13 +439,11 @@
         tCtx.fillText(`⭐ 隱藏考核： ${currentHiddenScore} 分`, 80, 275);
         tCtx.fillText(`❤️ 剩餘體力： ${currentMood} / ${currentMaxMood}`, 80, 320);
 
-        // 底部版權
         tCtx.fillStyle = '#a4b0be';
         tCtx.font = '13px "微軟正黑體", sans-serif';
         tCtx.textAlign = 'center';
         tCtx.fillText('GitHub Pages | 營隊生存模擬器 MMO 旗艦版', 300, 385);
 
-        // 觸發下載 JPG
         let link = document.createElement('a');
         link.download = `camp_score_${finalTimeUsed}s.jpg`;
         link.href = tempCanvas.toDataURL('image/jpeg', 0.92);
@@ -494,37 +486,46 @@
             title: '🚨 突發危機：便當送錯了！',
             question: '廠商把素食便當送成魚排便當，海鮮過敏的學員快餓昏了，你該怎麼辦？',
             choices: [
-                { text: '假裝沒看到，吃一下沒關係', moodChange: 1, timePenalty: 5, hiddenScore: -1, reply: '學員全身發癢，送急診 (體力 +1，耗時 +5秒，考核 -1)' },
-                { text: '先拿餅乾給他吃', moodChange: -2, timePenalty: 0, hiddenScore: 1, best: true, reply: '學員感動到痛哭流涕！(體力 -2，隱藏考核 +1)' }
+                { text: '假裝沒看到，吃一下沒關係', moodChange: 1, timePenalty: 5, hiddenScore: -1, reply: '學員全身發癢，送急診 (體力 +1, 耗時 +5秒)' },
+                { text: '先拿餅乾給他吃', moodChange: -2, timePenalty: 0, hiddenScore: 1, best: true, reply: '學員感動到痛哭流涕！' }
             ]
         },
         {
             title: '🚨 突發危機：午後大雷雨！',
             question: '外面突然下起狂風暴雨，走廊上的大地遊戲道具快被淋濕了！',
             choices: [
-                { text: '站在屋簷下指揮學員去收', moodChange: 0, timePenalty: 5, hiddenScore: -1, reply: '學員越收越亂，還差點滑倒！(耗時 +5秒，考核 -1)' },
-                { text: '安頓好學員，並立刻搶救道具與器材', moodChange: -2, timePenalty: -3, hiddenScore: 1, best: true, reply: '全身淋濕但保住了器材！(體力 -2，耗時 -3秒，考核 +1)' }
+                { text: '站在屋簷下指揮學員去收', moodChange: 0, timePenalty: 5, hiddenScore: -1, reply: '學員越收越亂，差點滑倒！' },
+                { text: '安頓好學員，立刻搶救器材', moodChange: -2, timePenalty: -3, hiddenScore: 1, best: true, reply: '全身淋濕但保住了器材！' }
             ]
         },
         {
             title: '🚨 突發危機：音控設備大爆音！',
-            question: '教室麥克風突然發出刺耳尖叫聲，全場學員摀著耳朵開始躁動！',
+            question: '教室麥克風突然發出刺耳尖叫聲，全場學員摀著耳朵躁動！',
             choices: [
-                { text: '在設備處理期間安撫學員情緒', moodChange: -2, timePenalty: -4, hiddenScore: 1, best: true, reply: '學員雖然感到不適，但你的用心他們感受到了！(體力 -2，耗時 -4秒，考核 +1)' },
-                { text: '在台下跟著一起摀耳朵乾瞪眼', moodChange: -1, timePenalty: 4, hiddenScore: -1, reply: '場面尷尬冷場了好幾分鐘...(體力 -1，耗時 +4秒，考核 -1)' }
+                { text: '安撫學員並協助調整設備', moodChange: -2, timePenalty: -4, hiddenScore: 1, best: true, reply: '危機完美解除！' },
+                { text: '在台下跟著一起摀耳朵', moodChange: -1, timePenalty: 4, hiddenScore: -1, reply: '場面尷尬冷場了好久...' }
             ]
         },
         {
             title: '🚨 突發危機：學員吐了！',
             question: '有學員吃飽亂跑突然臉色發白，眼看就要吐在地板上了！',
             choices: [
-                { text: '開始尖叫亂跑', moodChange: -1, timePenalty: 6, hiddenScore: -1, reply: '地板慘不忍睹，花超多時間清理...(體力 -1，耗時 +6秒，考核 -1)' },
-                { text: '冷靜地到廁所拿拖把抹布處理乾淨', moodChange: -2, timePenalty: -2, hiddenScore: 1, best: true, reply: '滿分反應！(體力 -2，耗時 -2秒，考核 +1)' }
+                { text: '開始尖叫逃跑', moodChange: -1, timePenalty: 6, hiddenScore: -1, reply: '地板慘不忍睹...' },
+                { text: '冷靜拿拖把清理乾淨', moodChange: -2, timePenalty: -2, hiddenScore: 1, best: true, reply: '滿分危機處理！' }
             ]
         }
     ];
     let triggeredCrises = 0;
     let usedCrisisIndices = new Set();
+    
+    // 動態隨機危機觸發秒數變數
+    let crisisTime1 = 18;
+    let crisisTime2 = 50;
+
+    function randomizeCrisisTimes() {
+        crisisTime1 = Math.floor(Math.random() * 12) + 15; // 15 ~ 26 秒隨機
+        crisisTime2 = Math.floor(Math.random() * 20) + 45; // 45 ~ 64 秒隨機
+    }
 
     // ==========================================
     // ⚙️ 核心設定 (正計時與雙主線任務)
@@ -879,6 +880,7 @@
 
     function startGame() {
         applyClassStats();
+        randomizeCrisisTimes(); // 每次開局隨機決定危機觸發時間
         isGameStarted = true;
         document.getElementById('start-screen-overlay').style.display = 'none';
         logSystem(`[系統] 以「${CLASSES[selectedClassKey].name}」身分開始正計時挑戰！`, "system");
@@ -899,7 +901,8 @@
             elapsedTime++; 
             updateTimerUI();
             
-            if ((elapsedTime === 20 && triggeredCrises === 0) || (elapsedTime === 55 && triggeredCrises === 1)) {
+            // 隨機動態觸發危機
+            if ((elapsedTime === crisisTime1 && triggeredCrises === 0) || (elapsedTime === crisisTime2 && triggeredCrises === 1)) {
                 triggerRandomCrisis();
                 return;
             }
@@ -950,7 +953,7 @@
                 }
 
                 changeMood(finalMoodCost);
-                if (isGameOver) return; // 體力小於0不再直接死亡，此處僅防呆
+                if (isGameOver) return;
 
                 if (choice.timePenalty !== 0) {
                     elapsedTime = Math.max(0, elapsedTime + choice.timePenalty);
@@ -998,7 +1001,6 @@
         }
     }
 
-    // 💡 改動：心情扣完不會死，允許進入負分，並進入過勞狀態
     function changeMood(amount, sourceX = player.pixelX, sourceY = player.pixelY) {
         if (amount === 0) return;
         currentMood = currentMood + amount; 
@@ -1031,15 +1033,10 @@
     // 🏅 【多重結局與稱號判定系統】
     // ==========================================
     function evaluateEnding(timeUsed) {
-        if (currentMood < 0 && currentHiddenScore >= 10) {
+        if (currentMood < 0) {
             return {
-                icon: '😵', title: '身體透支·過勞倒地！', tag: '【💀燃燒殆盡的隊輔】', color: 'var(--danger)',
-                desc: '雖然你成功撐到最後完成了任務，但體力透支了（分數：' + currentMood + '）！你在結業式最後一刻直接倒地昏迷，被救護車載走了...'
-            };
-        } else if (currentMood < 0 && currentHiddenScore < 6) {
-            return {
-                icon: '🤪', title: '身體透支·過勞倒地.營隊爆炸！', tag: '【☠️行走的大雷包】', color: 'var(--danger)',
-                desc: '雖然你成功撐到最後完成了任務，但體力透支了（分數：' + currentMood + '）！你在結業式最後一刻直接倒地昏迷，被救護車載走了...營隊還因為你的各項錯誤決策毀了'
+                icon: '😵', title: '身體透支·過勞倒地！', tag: '【💀燃燒殆盡的社畜】', color: 'var(--danger)',
+                desc: '雖然你成功撐到最後完成了任務，但體力透支到了負分（分數：' + currentMood + '）！你在結營典禮最後一刻直接倒地昏迷，被救護車載走了...'
             };
         } else if (timeUsed <= 45 && currentHiddenScore >= 13) {
             return {
@@ -1356,7 +1353,7 @@
         const scene = scenes[currentScene];
         const cls = CLASSES[selectedClassKey];
         
-        // 💡 改動：當心情小於等於 0 (過勞狀態)，移動速度變為原本的 1/3
+        // 當心情小於等於 0 (過勞狀態)，移動速度變為原本的 1/3
         let currentSpeed = currentMood <= 0 ? cls.speed / 3 : cls.speed;
         
         if (isMoving && pathQueue.length > 0) {
