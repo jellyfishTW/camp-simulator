@@ -1,486 +1,1736 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>太空船主控台</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #030712; /* Deep slate */
-            background-image: 
-                linear-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px;
-            color: #e2e8f0;
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            overflow-x: hidden;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>營隊生存模擬器 | MMO 旗艦版</title>
+<style>
+    /* ================= ⚔️ MMO 現代化 CSS 樣式 ⚔️ ================= */
+    :root {
+        --primary: #4facfe; --danger: #ff4757; --success: #2ed573; --warning: #ffa502; --xp-color: #f1c40f;
+        --hud-bg: rgba(15, 20, 30, 0.75); --hud-border: rgba(79, 172, 254, 0.4);
+    }
+    
+    body, html { 
+        margin: 0; padding: 0; background: #050505; 
+        touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+        width: 100vw; overflow: hidden;
+        height: 100vh; height: 100dvh; 
+        font-family: '微軟正黑體', -apple-system, sans-serif;
+    }
+    
+    #game-container {
+        position: relative; width: 100%; height: 100%; 
+        display: flex; justify-content: center; align-items: center; 
+    }
+    
+    #canvas-wrapper {
+        position: relative; width: 100%; max-width: 1200px; aspect-ratio: 16 / 10;
+        box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    }
+    
+    canvas { 
+        width: 100%; height: 100%; display: block;
+        object-fit: contain; image-rendering: pixelated; cursor: crosshair;
+    }
 
-        .sci-fi-title {
-            font-family: 'Orbitron', 'Noto Sans TC', sans-serif;
-            text-shadow: 0 0 10px rgba(6, 182, 212, 0.8), 0 0 20px rgba(6, 182, 212, 0.5);
-            letter-spacing: 4px;
-        }
+    /* ================= 🛡️ HUD 介面 ================= */
+    #hud-container {
+        position: absolute; top: env(safe-area-inset-top, 10px); left: 0; width: 100%;
+        display: flex; justify-content: space-between; align-items: flex-start;
+        padding: 15px 20px; box-sizing: border-box; z-index: 20; pointer-events: none;
+    }
 
-        .panel-container {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(6, 182, 212, 0.3);
-            box-shadow: 0 0 30px rgba(6, 182, 212, 0.15), inset 0 0 20px rgba(6, 182, 212, 0.05);
-            position: relative;
-        }
+    .hud-panel {
+        background: var(--hud-bg); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        border: 1px solid var(--hud-border); border-radius: 12px; color: #fff; pointer-events: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    #hud-player { display: flex; align-items: center; padding: 8px 15px 8px 8px; border-radius: 50px; }
+    #player-avatar { font-size: 30px; background: linear-gradient(135deg, #2f3542, #1e272e); border: 2px solid var(--primary); border-radius: 50%; width: 55px; height: 55px; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px var(--primary); margin-right: 15px; overflow: hidden; }
+    #player-avatar img { width: 85%; height: 85%; object-fit: contain; display: none; }
+    
+    #player-info { display: flex; flex-direction: column; width: 190px; gap: 4px; }
+    #player-name { font-size: 13px; font-weight: 900; color: var(--primary); text-shadow: 0 2px 4px rgba(0,0,0,0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* 獨立的血條與經驗條樣式 */
+    .bar-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: bold; }
+    .bar-bg { width: 125px; height: 8px; background: rgba(0,0,0,0.6); border-radius: 4px; overflow: hidden; border: 1px solid #333; }
+    
+    #hp-bar { height: 100%; width: 100%; background: var(--success); transition: width 0.3s, background 0.3s; }
+    #xp-bar { height: 100%; width: 0%; background: var(--xp-color); transition: width 0.3s; box-shadow: inset 0 0 4px rgba(255,255,255,0.6); }
+
+    #hud-quest { padding: 15px; min-width: 215px; }
+    .quest-title { font-size: 14px; color: var(--warning); font-weight: 900; margin-bottom: 10px; border-bottom: 1px dashed rgba(255,255,255,0.2); padding-bottom: 5px; letter-spacing: 1px;}
+    .quest-item { font-size: 13px; margin-bottom: 6px; display: flex; justify-content: space-between; gap: 10px;}
+    #timer-display { font-size: 18px; font-weight: 900; color: #fff; text-align: center; margin-top: 8px; text-shadow: 0 0 8px rgba(255,255,255,0.5);}
+
+    #hud-chat { position: absolute; bottom: env(safe-area-inset-bottom, 20px); left: 20px; padding: 10px; width: 280px; height: 150px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; border: none; background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%); box-shadow: none; z-index: 10; pointer-events: none;}
+    .chat-msg { font-size: 13px; margin-top: 4px; animation: slideIn 0.3s ease forwards; text-shadow: 1px 1px 2px #000; font-weight: bold;}
+    .chat-msg.system { color: #a4b0be; } .chat-msg.damage { color: var(--danger); } .chat-msg.heal { color: var(--success); } .chat-msg.info { color: var(--primary); }
+    @keyframes slideIn { from { transform: translateX(-10px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* ================= 💬 對話框與突發危機框 ================= */
+    #dialog-box {
+        position: fixed; bottom: max(25px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); 
+        width: 92%; max-width: 650px; max-height: 60dvh; overflow-y: auto; 
+        background: linear-gradient(180deg, rgba(30, 40, 60, 0.95), rgba(15, 20, 30, 0.98)); 
+        border: 2px solid rgba(79, 172, 254, 0.6); border-radius: 12px; padding: 20px; box-sizing: border-box;
+        display: none; font-size: 18px; line-height: 1.6; z-index: 9999; color: #fff;
+        pointer-events: auto; cursor: pointer; box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+    }
+    #dialog-box.crisis-mode {
+        background: linear-gradient(180deg, rgba(60, 20, 25, 0.96), rgba(25, 10, 15, 0.98));
+        border: 2px solid var(--danger);
+        box-shadow: 0 0 35px rgba(255, 71, 87, 0.6);
+    }
+    #dialog-name { color: #feca57; font-weight: 900; margin-bottom: 10px; font-size: 22px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);}
+    #dialog-hint { font-size: 14px; color: #888; margin-top: 15px; text-align: right; font-weight: bold; animation: pulse 1s infinite;}
+    @keyframes pulse { 50% { opacity: 0.3; } }
+    
+    #choices-container { display: none; flex-direction: column; gap: 12px; margin-top: 20px; }
+    .choice-btn { background: rgba(79, 172, 254, 0.15); color: #fff; padding: 14px 20px; border-radius: 8px; border: 1px solid var(--primary); text-align: center; font-weight: bold; cursor: pointer; transition: 0.1s; }
+    .choice-btn:active { background: rgba(79, 172, 254, 0.6); transform: scale(0.98); }
+
+    /* ================= 🎭 螢幕遮罩與選單 ================= */
+    .overlay-screen { 
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; 
+        display: none; flex-direction: column; justify-content: center; align-items: center; 
+        z-index: 9999; text-align: center; backdrop-filter: blur(5px); 
+        animation: fadeIn 0.5s ease forwards; overflow-y: auto; padding: 20px 10px; box-sizing: border-box;
+        touch-action: pan-y;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    .class-selector {
+        display: flex; gap: 10px; width: 95%; max-width: 500px; justify-content: center; margin-top: 8px; pointer-events: auto;
+    }
+    .class-card {
+        flex: 1; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.15);
+        border-radius: 10px; padding: 8px 4px; cursor: pointer; transition: 0.2s; color: #fff;
+    }
+    .class-card.selected {
+        background: rgba(79, 172, 254, 0.25); border-color: var(--primary);
+        box-shadow: 0 0 15px rgba(79, 172, 254, 0.5); transform: translateY(-3px);
+    }
+    .class-icon { font-size: 22px; margin-bottom: 2px; }
+    .class-title { font-size: 12px; font-weight: 900; color: var(--warning); margin-bottom: 2px; }
+    .class-desc { font-size: 9px; color: #dfe4ea; line-height: 1.2; }
+
+    .btn-action { margin-top: 10px; padding: 10px 30px; background: linear-gradient(90deg, var(--primary), #00f2fe); color: #fff; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 900; box-shadow: 0 0 20px rgba(79, 172, 254, 0.5); pointer-events: auto; border: none; letter-spacing: 2px; flex-shrink: 0;}
+    .btn-action:active { transform: scale(0.95); }
+    .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+    @keyframes shake { 10%, 90% { transform: translate3d(-3px, 0, 0); } 20%, 80% { transform: translate3d(5px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-8px, 0, 0); } 40%, 60% { transform: translate3d(8px, 0, 0); } }
+
+    /* 排行榜雙欄面板 */
+    .leaderboard-container {
+        display: flex; gap: 10px; width: 95%; max-width: 440px; margin-top: 8px; justify-content: center; flex-shrink: 0;
+    }
+    .leaderboard {
+        flex: 1; background: rgba(0,0,0,0.65); padding: 8px 10px; border-radius: 10px;
+        border: 1px solid var(--warning); box-sizing: border-box; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+    .leaderboard-row {
+        display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 3px; margin-bottom: 3px; font-size: 11px; color: #ffffff; white-space: nowrap; overflow: hidden;
+    }
+    .leaderboard-row span:first-child { overflow: hidden; text-overflow: ellipsis; margin-right: 5px; }
+    .leaderboard-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+    /* 🏆 彈窗樣式 */
+    .modal-box {
+        display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
+        background: rgba(10, 15, 25, 0.95); z-index: 500; flex-direction: column;
+        justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;
+        backdrop-filter: blur(8px);
+    }
+    .trophy-item, .skin-item {
+        background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px; padding: 10px 15px; display: flex; align-items: center; gap: 15px;
+        width: 100%; max-width: 340px; box-sizing: border-box; opacity: 0.5;
+    }
+    .trophy-item.unlocked, .skin-item.unlocked {
+        background: rgba(255, 165, 2, 0.12); border-color: var(--warning); opacity: 1.0;
+        box-shadow: 0 0 15px rgba(255, 165, 2, 0.3); cursor: pointer;
+    }
+    .skin-item.selected-skin {
+        border-color: var(--success);
+        background: rgba(46, 213, 115, 0.2);
+    }
+    .trophy-icon, .skin-icon { font-size: 28px; filter: grayscale(100%); }
+    .trophy-item.unlocked .trophy-icon, .skin-item.unlocked .skin-icon { filter: none; }
+    .trophy-info, .skin-info { display: flex; flex-direction: column; text-align: left; }
+    .trophy-name, .skin-name { font-size: 14px; font-weight: 900; color: #fff; margin-bottom: 2px; }
+    .trophy-desc, .skin-desc { font-size: 11px; color: #a4b0be; line-height: 1.3; }
+
+    #ending-badge {
+        display: none; background: linear-gradient(90deg, #ff9f43, #ff6b6b); color: #fff;
+        padding: 6px 18px; border-radius: 20px; font-weight: 900; font-size: 15px;
+        margin-bottom: 8px; box-shadow: 0 0 15px rgba(255, 107, 107, 0.6); letter-spacing: 1px;
+    }
+
+    /* ================= 📱 手機版排版優化 ================= */
+    @media (max-width: 768px) {
+        #hud-container { padding: 10px 5px; }
+        #hud-player { top: max(15px, env(safe-area-inset-top)); left: 15px; transform: scale(0.9); transform-origin: top left; }
+        #hud-quest { top: max(85px, calc(env(safe-area-inset-top) + 70px)); left: 15px; right: auto; transform: scale(0.9); transform-origin: top left; padding: 12px; min-width: 170px; }
+        #hud-chat { display: none; } 
         
-        .panel-container::before, .panel-container::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #06b6d4;
-            transition: all 0.3s ease;
-        }
-        .panel-container::before {
-            top: -2px;
-            left: -2px;
-            border-right: none;
-            border-bottom: none;
-        }
-        .panel-container::after {
-            bottom: -2px;
-            right: -2px;
-            border-left: none;
-            border-top: none;
-        }
+        #dialog-box { padding: 18px; bottom: max(20px, env(safe-area-inset-bottom)); }
+        #dialog-name { font-size: 19px; margin-bottom: 6px; }
+        #dialog-text { font-size: 16px; }
+        .choice-btn { padding: 12px 15px; font-size: 15px; margin-top: 5px; }
 
-        .input-scifi {
-            background: rgba(8, 145, 178, 0.1);
-            border: 1px solid rgba(6, 182, 212, 0.4);
-            color: #67e8f9;
-            box-shadow: inset 0 0 10px rgba(6, 182, 212, 0.1);
-            transition: all 0.3s ease;
-        }
-        .input-scifi:focus {
-            outline: none;
-            border-color: #22d3ee;
-            box-shadow: 0 0 15px rgba(34, 211, 238, 0.4), inset 0 0 15px rgba(34, 211, 238, 0.2);
-            background: rgba(8, 145, 178, 0.2);
-        }
-        .input-scifi::placeholder {
-            color: rgba(103, 232, 249, 0.4);
-            font-size: 0.9rem;
-        }
-
-        select option {
-            background-color: #0f172a; 
-            color: #67e8f9;
-            font-weight: bold;
-        }
-
-        .btn-scifi {
-            background: linear-gradient(45deg, transparent 5%, #0891b2 5%);
-            border: none;
-            color: #fff;
-            box-shadow: 6px 0px 0px #000;
-            transition: all 0.2s ease;
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
-        }
-        .btn-scifi:hover {
-            background: linear-gradient(45deg, transparent 5%, #06b6d4 5%);
-            box-shadow: 6px 0px 0px rgba(6, 182, 212, 0.6), 0 0 20px rgba(6, 182, 212, 0.5);
-            transform: translateY(-2px);
-        }
-        .btn-scifi:active {
-            transform: translateY(0);
-            box-shadow: 3px 0px 0px #000;
-        }
-
-        .terminal {
-            font-family: 'Courier New', Courier, monospace;
-            background: #000;
-            border-left: 4px solid #22c55e;
-            text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
-        }
-
-        .typewriter-text {
-            overflow: hidden;
-            white-space: pre-wrap;
-            margin: 0 auto;
-            border-right: .15em solid orange;
-            animation: blink-caret .75s step-end infinite;
-        }
-
-        @keyframes blink-caret {
-            from, to { border-color: transparent }
-            50% { border-color: #22c55e; }
-        }
-
-        /* 圖片下拉選單專屬樣式 */
-        .custom-dropdown {
-            position: relative;
-            cursor: pointer;
-        }
-        .dropdown-options {
-            display: none;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: #0f172a;
-            border: 1px solid rgba(6, 182, 212, 0.6);
-            z-index: 50;
-            max-height: 250px;
-            overflow-y: auto;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
-        }
-        .dropdown-options.show {
-            display: block;
-        }
-        .dropdown-item {
-            display: flex;
-            align-items: center;
-            padding: 8px 12px;
-            border-bottom: 1px solid rgba(6, 182, 212, 0.15);
-            transition: background 0.2s;
-        }
-        .dropdown-item:hover {
-            background: rgba(8, 145, 178, 0.3);
-        }
-        .dropdown-item img {
-            width: 32px;
-            height: 32px;
-            object-fit: cover;
-            border-radius: 4px;
-            margin-right: 10px;
-            border: 1px solid #06b6d4;
-        }
-
-        /* Status LEDs */
-        .led {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            box-shadow: 0 0 8px currentColor;
-        }
-        .led-green { background-color: #22c55e; color: #22c55e; animation: pulse 2s infinite; }
-        .led-red { background-color: #ef4444; color: #ef4444; animation: blink 1s infinite; }
-        .led-blue { background-color: #3b82f6; color: #3b82f6; }
-
-        @keyframes pulse {
-            0% { opacity: 0.6; box-shadow: 0 0 5px currentColor; }
-            50% { opacity: 1; box-shadow: 0 0 15px currentColor; }
-            100% { opacity: 0.6; box-shadow: 0 0 5px currentColor; }
-        }
-        @keyframes blink {
-            0%, 49% { opacity: 1; }
-            50%, 100% { opacity: 0.2; }
-        }
-
-        .message-box {
-            clip-path: polygon(10px 0, 10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-        }
-    </style>
+        #start-title { font-size: 24px!important; margin-bottom: 4px!important; }
+        .class-icon { font-size: 18px; }
+        .class-title { font-size: 11px; }
+        .class-desc { font-size: 8px; }
+        
+        #ending-icon { font-size: 40px!important; margin-bottom: 4px!important; }
+        #ending-title { font-size: 24px!important; margin-bottom: 4px!important; }
+        #ending-desc { font-size: 12px!important; padding: 0 10px; }
+        .btn-action { font-size: 15px; padding: 8px 20px; margin-top: 8px; }
+    }
+</style>
 </head>
-<body class="p-4 sm:p-8">
+<body>
 
-    <!-- 頂部狀態列 -->
-    <div class="web-header w-full max-w-6xl flex justify-between items-center mb-8 px-4 border-b border-cyan-800 pb-2">
-        <div class="flex items-center space-x-4">
-            <span class="font-bold text-cyan-500 tracking-wider">SYS_ID: 5107</span>
-            <div class="flex space-x-2">
-                <span class="led led-green"></span>
-                <span class="led led-blue"></span>
-                <span class="led led-red"></span>
-            </div>
-        </div>
-        <div class="text-xs text-cyan-600 font-mono tracking-widest hidden sm:block">
-            SECURITY LEVEL: MAXIMUM // OVERRIDE REQUIRED
-        </div>
-    </div>
-
-    <!-- 主控台面板 -->
-    <main class="panel-container w-full max-w-5xl rounded-lg p-6 sm:p-10 z-10 flex flex-col items-center">
-        
-        <h1 class="sci-fi-title text-3xl sm:text-5xl font-black text-cyan-400 mb-2 uppercase text-center">
-            主控台
-        </h1>
-        <p class="text-cyan-600 text-sm tracking-widest mb-10 text-center">MAIN COMMAND CONSOLE // AWAITING INPUT</p>
-
-        <!-- 動態訊息系統 (終端機) -->
-        <div class="terminal w-full p-4 mb-10 rounded-sm bg-black/80 text-green-400 text-sm sm:text-base shadow-inner">
-            <div class="flex justify-between border-b border-green-800 mb-2 pb-1">
-                <span class="text-xs font-bold text-green-600">系統訊息</span>
-                <span class="text-xs font-bold text-green-600">AUTH: AUTO</span>
-            </div>
-            <!-- 動態訊息會自動在這裡輪播顯示 -->
-            <p id="dynamic-terminal" class="typewriter-text leading-relaxed min-h-[80px]">
-                > 系統初始化中...
-            </p>
-        </div>
-
-        <!-- 輸入區域 (水平排列) -->
-        <div class="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            
-            <!-- Input 01：修復部位圖形 (自製圖片下拉選單) -->
-            <div class="flex flex-col relative">
-                <label class="text-xs text-cyan-500 mb-1 ml-1 tracking-widest uppercase">Input 01 (修復部位圖形)</label>
+<div id="game-container">
+    
+    <div id="hud-container">
+        <!-- 💡 玩家 HUD 區塊：血條與經驗條已完全獨立分開 -->
+        <div id="hud-player" class="hud-panel">
+            <div id="player-avatar"><span id="avatar-emoji">🧚‍♀️</span><img id="avatar-img" src="" alt=""></div>
+            <div id="player-info">
+                <div id="player-name">Lv.1 體能怪物</div>
                 
-                <!-- 點擊展開的觸發按鈕 -->
-                <div id="customSelectBtn" class="custom-dropdown input-scifi w-full p-3 rounded-sm text-center font-bold tracking-wider flex items-center justify-between" onclick="toggleDropdown()">
-                    <span id="selectedText">-- 選擇修復部位圖形 --</span>
-                    <span class="text-cyan-400 text-xs">▼</span>
+                <!-- 心情血條行 -->
+                <div class="bar-row">
+                    <span style="color: var(--success);">❤️ HP</span>
+                    <div class="bar-bg"><div id="hp-bar"></div></div>
+                    <span id="mood-text" style="color: #a4b0be; width: 32px; text-align: right;">15/15</span>
                 </div>
 
-                <!-- 下拉選項清單 (您可以在此替換 src="您的圖片網址或檔案路徑") -->
-                <div id="dropdownOptions" class="dropdown-options rounded-sm">
-                    <div class="dropdown-item" onclick="selectOption('第一隻外星人的角', 'https://picsum.photos/id/10/50/50')">
-                        <img src="https://picsum.photos/id/10/50/50" alt="選項1">
-                        <span class="text-cyan-300 text-sm font-bold">第一隻外星人的角</span>
-                    </div>
-                    <div class="dropdown-item" onclick="selectOption('第二隻外星人的角', 'https://picsum.photos/id/20/50/50')">
-                        <img src="https://picsum.photos/id/20/50/50" alt="選項2">
-                        <span class="text-cyan-300 text-sm font-bold">第二隻外星人的角</span>
-                    </div>
-                    <div class="dropdown-item" onclick="selectOption('第三隻外星人的角', 'https://picsum.photos/id/30/50/50')">
-                        <img src="https://picsum.photos/id/30/50/50" alt="選項3">
-                        <span class="text-cyan-300 text-sm font-bold">第三隻外星人的角 (正確答案)</span>
-                    </div>
-                    <div class="dropdown-item" onclick="selectOption('第四隻外星人的角', 'https://picsum.photos/id/40/50/50')">
-                        <img src="https://picsum.photos/id/40/50/50" alt="選項4">
-                        <span class="text-cyan-300 text-sm font-bold">第四隻外星人的角</span>
-                    </div>
+                <!-- 經驗條行 -->
+                <div class="bar-row" style="margin-top: 2px;">
+                    <span style="color: var(--xp-color);">✨ XP</span>
+                    <div class="bar-bg"><div id="xp-bar"></div></div>
+                    <span id="player-xp-text" style="color: var(--xp-color); width: 32px; text-align: right; font-size: 10px;">0/5</span>
                 </div>
-
-                <!-- 隱藏的 input 用於給 JS 驗證讀取 -->
-                <input type="hidden" id="input1" value="">
-            </div>
-
-            <!-- Input 02：最大能源線路顏色 (下拉選單) -->
-            <div class="flex flex-col">
-                <label class="text-xs text-cyan-500 mb-1 ml-1 tracking-widest uppercase">Input 02</label>
-                <select id="input2" class="input-scifi w-full p-3 rounded-sm text-center font-bold tracking-wider cursor-pointer">
-                    <option value="" disabled selected>-- 選擇顏色 --</option>
-                    <option value="紅色">紅色</option>
-                    <option value="藍色">藍色</option>
-                    <option value="綠色">綠色</option>
-                    <option value="黃色">黃色</option> <!-- 正確答案 -->
-                </select>
-            </div>
-
-            <div class="flex flex-col">
-                <label class="text-xs text-cyan-500 mb-1 ml-1 tracking-widest uppercase">Input 03</label>
-                <input type="text" id="input3" placeholder="發動指令(數字)" class="input-scifi w-full p-3 rounded-sm text-center font-bold tracking-wider">
-            </div>
-            <div class="flex flex-col">
-                <label class="text-xs text-cyan-500 mb-1 ml-1 tracking-widest uppercase">Input 04</label>
-                <input type="text" id="input4" placeholder="寶藏啟動密碼(數字)" class="input-scifi w-full p-3 rounded-sm text-center font-bold tracking-wider">
             </div>
         </div>
 
-        <!-- 驗證按鈕 -->
-        <button onclick="verifyAccess()" class="btn-scifi px-12 py-4 text-lg font-bold tracking-widest uppercase relative overflow-hidden group">
-            <span class="relative z-10">驗證</span>
-        </button>
-
-        <!-- 訊息回饋區 -->
-        <div id="message-container" class="mt-8 w-full max-w-2xl hidden transition-all duration-300">
-            <!-- 訊息內容透過 JS 注入 -->
+        <div id="hud-quest" class="hud-panel">
+            <div class="quest-title">📜 主線任務：營隊危機</div>
+            <div class="quest-item"><span>💬 安撫學員與幹部</span> <span id="quest-progress">0/12</span></div>
+            <div class="quest-item"><span>🎒 尋回遺失的物資</span> <span id="supply-progress">0/3</span></div>
+            <div id="timer-display">⏱️ 0 秒</div>
         </div>
-
-    </main>
-
-    <!-- 底部裝飾 -->
-    <div class="mt-8 text-cyan-800 text-xs font-mono tracking-widest opacity-50 text-center">
-        &copy; oneheart_ntnu. ALL RIGHTS RESERVED.<br>
-        SECURE CONNECTION ESTABLISHED.
     </div>
 
-    <script>
-        // ==========================================
-        // 圖片下拉選單互動控制
-        // ==========================================
-        function toggleDropdown() {
-            const options = document.getElementById('dropdownOptions');
-            options.classList.toggle('show');
+    <div id="hud-chat" class="hud-panel">
+        <div class="chat-msg system">歡迎來到營隊生存模擬器。</div>
+    </div>
+
+    <div id="canvas-wrapper">
+        <canvas id="gameCanvas" width="800" height="500"></canvas>
+    </div>
+
+    <div id="dialog-box">
+        <div id="dialog-name"></div>
+        <div id="dialog-text"></div>
+        <div id="choices-container"></div>
+        <div id="dialog-hint">▼ 點擊繼續 (或點擊對話框)</div>
+    </div>
+    
+    <!-- 📖 開始畫面 -->
+    <div id="start-screen-overlay" class="overlay-screen" style="display: flex; background: rgba(20, 30, 40, 0.96); z-index: 200;">
+        <div style="font-size: 36px; margin-bottom: 2px; filter: drop-shadow(0 0 20px rgba(79, 172, 254, 0.8));" id="menu-logo-icon">🏕️</div>
+        <div id="start-title" style="font-size: 26px; margin-bottom: 4px; font-weight: 900; letter-spacing: 2px; color: var(--primary);">營隊生存模擬器</div>
+        
+        <div style="font-size: 11px; color: #a4b0be; margin-bottom: 2px;">👇 請選擇你的隊輔天賦職業 👇</div>
+        
+        <!-- 🎭 職業選擇器 -->
+        <div class="class-selector">
+            <div class="class-card selected" id="card-athletic" onclick="selectClass('athletic')">
+                <div class="class-icon">🏃</div>
+                <div class="class-title">體能怪物</div>
+                <div class="class-desc">移速+50% 走路不耗體力<br><span style="color:var(--danger);">選錯扣血加倍</span></div>
+            </div>
+            <div class="class-card" id="card-empath" onclick="selectClass('empath')">
+                <div class="class-icon">🧠</div>
+                <div class="class-title">讀心大師</div>
+                <div class="class-desc">體力上限18 顯示最佳選項<br><span style="color:var(--danger);">移動速度略慢</span></div>
+            </div>
+            <div class="class-card" id="card-lucky" onclick="selectClass('lucky')">
+                <div class="class-icon">🍀</div>
+                <div class="class-title">佛系隊輔</div>
+                <div class="class-desc">初始考核+1 危機強運<br><span style="color:var(--danger);">體力上限12</span></div>
+            </div>
+        </div>
+
+        <!-- 🏆 雙欄獨立排行榜 -->
+        <div class="leaderboard-container">
+            <div class="leaderboard">
+                <div style="color: var(--warning); font-weight: 900; margin-bottom: 4px; font-size: 12px; letter-spacing: 1px;">👑 等級排行榜</div>
+                <div id="start-level-leaderboard-list" style="text-align: left; font-size: 11px;">
+                    <div style="text-align:center; color:#fff;">📡 載入中...</div>
+                </div>
+            </div>
+            <div class="leaderboard">
+                <div style="color: var(--success); font-weight: 900; margin-bottom: 4px; font-size: 12px; letter-spacing: 1px;">⚡ 最速排行榜</div>
+                <div id="start-speed-leaderboard-list" style="text-align: left; font-size: 11px;">
+                    <div style="text-align:center; color:#fff;">📡 載入中...</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 5px; flex-wrap: wrap; justify-content: center;">
+            <button class="btn-action" style="background: linear-gradient(90deg, #f39c12, #f1c40f); padding: 8px 14px; font-size: 13px;" onclick="openTrophyModal()">🏆 榮譽成就</button>
+            <button class="btn-action" style="background: linear-gradient(90deg, #ff4757, #ff6b81); padding: 8px 14px; font-size: 13px;" onclick="openSkinModal()">🎨 更換造型</button>
+            <button class="btn-action" style="padding: 8px 20px; font-size: 13px;" onclick="startGame()">進入營隊</button>
+        </div>
+    </div>
+
+    <!-- 🏆 成就獎盃櫃彈窗 -->
+    <div id="trophy-modal" class="modal-box">
+        <div style="font-size: 22px; font-weight: 900; color: var(--warning); margin-bottom: 10px; letter-spacing: 1px;">🏆 隊輔榮譽獎盃櫃</div>
+        <div id="trophy-list" style="width: 100%; max-width: 360px; max-height: 50dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;"></div>
+        <button class="btn-action" style="margin-top: 0; padding: 10px 30px; font-size: 15px;" onclick="closeTrophyModal()">返回選單</button>
+    </div>
+
+    <!-- 🎨 換 Skin 造型選擇彈窗 -->
+    <div id="skin-modal" class="modal-box">
+        <div style="font-size: 22px; font-weight: 900; color: #ff6b81; margin-bottom: 4px; letter-spacing: 1px;">🎨 隊輔造型衣櫃</div>
+        <div style="font-size: 12px; color: #a4b0be; margin-bottom: 12px;">點擊已解鎖的造型即可穿戴！</div>
+        <div id="skin-list" style="width: 100%; max-width: 360px; max-height: 50dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;"></div>
+        <button class="btn-action" style="margin-top: 0; padding: 10px 30px; font-size: 15px;" onclick="closeSkinModal()">返回選單</button>
+    </div>
+
+    <!-- 🥀 / 🎉 結局畫面 -->
+    <div id="ending-overlay" class="overlay-screen" style="background: rgba(15, 15, 20, 0.96);">
+        <div id="ending-icon" style="font-size: 45px; margin-bottom: 4px;"></div>
+        <div id="ending-title" style="font-size: 26px; margin-bottom: 4px; font-weight: 900;"></div>
+        <div id="ending-badge">獲得稱號：【傳說隊輔】</div>
+        <div id="ending-desc" style="font-size: 13px; color: #dfe4ea; line-height: 1.4; max-width: 420px; padding: 0 15px;"></div>
+        
+        <div id="score-submit-area" style="display: none; flex-direction: column; align-items: center; width: 100%; margin-top: 10px;">
+            <input type="text" id="player-name-input" placeholder="輸入大名留存稱號與紀錄..." maxlength="10" style="padding: 6px; font-size: 15px; border-radius: 8px; border: 2px solid var(--warning); text-align: center; margin-bottom: 8px; width: 80%; max-width: 220px; background: rgba(0,0,0,0.8); color: #fff; outline: none; pointer-events: auto;">
+            <div style="display: flex; gap: 8px; width: 100%; justify-content: center; flex-wrap: wrap;">
+                <button class="btn-action" style="margin-top: 0; padding: 8px 15px; font-size: 13px;" onclick="submitScore()">上傳雲端排行</button>
+                <button class="btn-action" style="margin-top: 0; padding: 8px 15px; font-size: 13px; background: linear-gradient(90deg, #ff4757, #ff6b81);" onclick="downloadScoreCardJPG()">📥 下載 JRPG 戰績卡</button>
+            </div>
+        </div>
+
+        <div id="ending-leaderboard" class="leaderboard-container" style="display: none;">
+            <div class="leaderboard">
+                <div style="color: var(--warning); font-weight: 900; margin-bottom: 4px; font-size: 12px; letter-spacing: 1px;">👑 等級排行榜</div>
+                <div id="ending-level-leaderboard-list" style="text-align: left; font-size: 11px;"></div>
+            </div>
+            <div class="leaderboard">
+                <div style="color: var(--success); font-weight: 900; margin-bottom: 4px; font-size: 12px; letter-spacing: 1px;">⚡ 最速排行榜</div>
+                <div id="ending-speed-leaderboard-list" style="text-align: left; font-size: 11px;"></div>
+            </div>
+        </div>
+
+        <button id="restart-btn" class="btn-action" onclick="restartGame()">重新連線</button>
+    </div>
+</div>
+
+<script>
+    const ASSET_URLS = {
+        floor_wood: 'https://images.unsplash.com/photo-1546484396-fb3fc6f95f98?w=200&h=200&fit=crop', 
+        floor_grass: 'https://images.unsplash.com/photo-1533460004989-acf295ce70eb?w=200&h=200&fit=crop', 
+        player: 'https://api.iconify.design/twemoji/fairy.svg?width=128&height=128', 
+        npc_guagua: 'https://api.iconify.design/twemoji/man-teacher.svg?width=128&height=128', 
+        npc_boy: 'https://api.iconify.design/twemoji/boy.svg?width=128&height=128', 
+        npc_girl: 'https://api.iconify.design/twemoji/girl.svg?width=128&height=128', 
+        npc_man: 'https://api.iconify.design/twemoji/man-student.svg?width=128&height=128', 
+        npc_woman: 'https://api.iconify.design/twemoji/woman-student.svg?width=128&height=128',
+        npc_chef: 'https://api.iconify.design/twemoji/man-cook.svg?width=128&height=128',
+        chair: 'https://api.iconify.design/twemoji/chair.svg?width=128&height=128', 
+        tree_big: 'https://api.iconify.design/twemoji/deciduous-tree.svg?width=128&height=128', 
+        tree_small: 'https://api.iconify.design/twemoji/evergreen-tree.svg?width=128&height=128', 
+        tent: 'https://api.iconify.design/twemoji/tent.svg?width=128&height=128', 
+        door: 'https://api.iconify.design/twemoji/door.svg?width=128&height=128', 
+        candy: 'https://api.iconify.design/twemoji/candy.svg?width=128&height=128', 
+        boba: 'https://api.iconify.design/twemoji/bubble-tea.svg?width=128&height=128', 
+        banana: 'https://api.iconify.design/twemoji/banana.svg?width=128&height=128',
+        clipboard: 'https://api.iconify.design/twemoji/clipboard.svg?width=128&height=128',
+        megaphone: 'https://api.iconify.design/twemoji/cheering-megaphone.svg?width=128&height=128',
+        flag: 'https://api.iconify.design/twemoji/triangular-flag.svg?width=128&height=128'
+    };
+
+    const images = {};
+    for (let key in ASSET_URLS) {
+        images[key] = new Image();
+        images[key].crossOrigin = "Anonymous"; 
+        images[key].src = ASSET_URLS[key];
+    }
+
+    // ==========================================
+    // ⭐ 【跨局等級與經驗值 (XP) 系統】
+    // ==========================================
+    let playerXP = parseFloat(localStorage.getItem('camp_player_xp')) || 0;
+    let playerLevel = parseInt(localStorage.getItem('camp_player_level')) || 1;
+
+    function addXP(amount, sourceX, sourceY) {
+        playerXP += amount;
+        let requiredXP = playerLevel * 5; 
+        let leveledUp = false;
+        
+        while (playerXP >= requiredXP && playerLevel < 100) {
+            playerXP -= requiredXP;
+            playerLevel++;
+            leveledUp = true;
+            requiredXP = playerLevel * 5;
         }
 
-        function selectOption(value, imgSrc) {
-            // 設定隱藏 input 的值供驗證用
-            document.getElementById('input1').value = value;
+        localStorage.setItem('camp_player_xp', playerXP);
+        localStorage.setItem('camp_player_level', playerLevel);
+        
+        const cls = CLASSES[selectedClassKey];
+        document.getElementById('player-name').innerText = `Lv.${playerLevel} ${cls.name}`;
+        
+        // 更新獨立經驗條與文字
+        let xpPct = Math.min(100, (playerXP / requiredXP) * 100);
+        document.getElementById('xp-bar').style.width = xpPct + '%';
+        document.getElementById('player-xp-text').innerText = `${Math.round(playerXP * 10) / 10}/${requiredXP}`;
+
+        if (leveledUp) {
+            logSystem(`[🎉 升等] 恭喜！隊輔等級提升至 Lv.${playerLevel}！`, "heal");
+            if (sourceX && sourceY) {
+                addFloatingText(sourceX, sourceY, `LEVEL UP! Lv.${playerLevel}`, '#f1c40f');
+            }
+        }
+    }
+
+    // ==========================================
+    // 🎨 【Skin 造型與衣櫃系統】
+    // ==========================================
+    const SKINS_DATA = [
+        { id: 'fairy', name: '菜鳥', icon: '🧚‍♀️', unlockAch: null, desc: '初始預設外觀' },
+        { id: 'ranger', name: '資深隊輔', icon: '🦉', unlockAch: null, desc: '初始預設外觀' },
+        { id: 'bear', name: '吉祥物大熊', icon: '🐻', unlockAch: 'ach_first_win', desc: '解鎖成就【初入營林】後解鎖' },
+        { id: 'robot', name: '傳說級隊輔', icon: '🤖', unlockAch: 'ach_speed_god', desc: '解鎖成就【光速傳說】後解鎖' }
+    ];
+
+    let currentSkinId = localStorage.getItem('camp_selected_skin') || 'fairy';
+
+    function applySelectedSkin() {
+        let skin = SKINS_DATA.find(s => s.id === currentSkinId) || SKINS_DATA[0];
+        player.icon = skin.icon;
+        player.imgKey = null; 
+
+        const avatarEmoji = document.getElementById('avatar-emoji');
+        const avatarImg = document.getElementById('avatar-img');
+        if(avatarEmoji && avatarImg) {
+            avatarEmoji.innerText = skin.icon;
+            avatarEmoji.style.display = 'block';
+            avatarImg.style.display = 'none';
+        }
+    }
+
+    function openSkinModal() {
+        let achs = JSON.parse(localStorage.getItem('camp_achievements')) || {};
+        let listHTML = '';
+        SKINS_DATA.forEach(skin => {
+            let isUnlocked = skin.unlockAch === null || achs[skin.unlockAch] === true;
+            let isSelected = currentSkinId === skin.id;
+            listHTML += `
+                <div class="skin-item ${isUnlocked ? 'unlocked' : ''} ${isSelected ? 'selected-skin' : ''}" ${isUnlocked ? `onclick="selectSkin('${skin.id}')"` : ''}>
+                    <div class="skin-icon">${skin.icon}</div>
+                    <div class="skin-info">
+                        <div class="skin-name">${skin.name} ${isSelected ? '✨(目前穿戴)' : (isUnlocked ? '✅' : '🔒')}</div>
+                        <div class="skin-desc">${skin.desc}</div>
+                    </div>
+                </div>`;
+        });
+        document.getElementById('skin-list').innerHTML = listHTML;
+        document.getElementById('skin-modal').style.display = 'flex';
+    }
+
+    function closeSkinModal() {
+        document.getElementById('skin-modal').style.display = 'none';
+    }
+
+    function selectSkin(skinId) {
+        currentSkinId = skinId;
+        localStorage.setItem('camp_selected_skin', skinId);
+        applySelectedSkin();
+        openSkinModal(); 
+    }
+
+    // ==========================================
+    // 🏆 【成就系統與 JRPG 狀態卡片匯出】
+    // ==========================================
+    const ACHIEVEMENTS_DATA = [
+        { id: 'ach_first_win', icon: '🏕️', name: '初入營林', desc: '成功完成一次營隊挑戰下營' },
+        { id: 'ach_speed_god', icon: '⚡', name: '光速傳說', desc: '解鎖「光速控場之神」稱號通關' },
+        { id: 'ach_high_hp', icon: '💖', name: '鋼鐵意志', desc: '以剩餘體力 10 點以上成功通關' },
+        { id: 'ach_all_classes', icon: '🎭', name: '全能導師', desc: '分別使用三種天賦職業成功通關過' }
+    ];
+
+    let lastEndingResult = null;
+
+    function checkAndUnlockAchievements(isVictory, timeUsed, endingTag, classKey) {
+        let achs = JSON.parse(localStorage.getItem('camp_achievements')) || {};
+        let classesUsed = JSON.parse(localStorage.getItem('camp_classes_used')) || [];
+        let newlyUnlocked = [];
+
+        if (isVictory) {
+            if (!achs['ach_first_win']) { achs['ach_first_win'] = true; newlyUnlocked.push('初入營林'); }
+            if (endingTag.includes('光速控場之神') && !achs['ach_speed_god']) { achs['ach_speed_god'] = true; newlyUnlocked.push('光速傳說'); }
+            if (currentMood >= 10 && !achs['ach_high_hp']) { achs['ach_high_hp'] = true; newlyUnlocked.push('鋼鐵意志'); }
             
-            // 更新按鈕顯示的文字與小圖片
-            const btnText = document.getElementById('selectedText');
-            btnText.innerHTML = `<div class="flex items-center"><img src="${imgSrc}" style="width:24px; height:24px; margin-right:8px; border-radius:2px;"><span>${value}</span></div>`;
-            
-            // 關閉下拉選單
-            document.getElementById('dropdownOptions').classList.remove('show');
+            if (!classesUsed.includes(classKey)) {
+                classesUsed.push(classKey);
+                localStorage.setItem('camp_classes_used', JSON.stringify(classesUsed));
+            }
+            if (classesUsed.length >= 3 && !achs['ach_all_classes']) {
+                achs['ach_all_classes'] = true; newlyUnlocked.push('全能導師');
+            }
+        }
+        localStorage.setItem('camp_achievements', JSON.stringify(achs));
+
+        if (newlyUnlocked.length > 0) {
+            setTimeout(() => {
+                alert(`🎉 恭喜解鎖新成就：\n【${newlyUnlocked.join('、')}】\n快去主選單的「榮譽成就」查看吧！`);
+            }, 600);
+        }
+    }
+
+    function openTrophyModal() {
+        let achs = JSON.parse(localStorage.getItem('camp_achievements')) || {};
+        let listHTML = '';
+        ACHIEVEMENTS_DATA.forEach(ach => {
+            let isUnlocked = achs[ach.id] === true;
+            listHTML += `
+                <div class="trophy-item ${isUnlocked ? 'unlocked' : ''}">
+                    <div class="trophy-icon">${ach.icon}</div>
+                    <div class="trophy-info">
+                        <div class="trophy-name">${ach.name} ${isUnlocked ? '✅' : '🔒'}</div>
+                        <div class="trophy-desc">${ach.desc}</div>
+                    </div>
+                </div>`;
+        });
+        document.getElementById('trophy-list').innerHTML = listHTML;
+        document.getElementById('trophy-modal').style.display = 'flex';
+    }
+
+    function closeTrophyModal() {
+        document.getElementById('trophy-modal').style.display = 'none';
+    }
+
+    function downloadScoreCardJPG() {
+        let tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 1600;  
+        tempCanvas.height = 1100; 
+        let tCtx = tempCanvas.getContext('2d');
+        tCtx.scale(2, 2);
+
+        // 繪製背景
+        let grad = tCtx.createLinearGradient(0, 0, 800, 550);
+        grad.addColorStop(0, '#0a1128'); grad.addColorStop(0.5, '#101d42'); grad.addColorStop(1, '#060a17');
+        tCtx.fillStyle = grad; tCtx.fillRect(0, 0, 800, 550);
+
+        // 繪製邊框
+        tCtx.strokeStyle = '#e1b12c'; tCtx.lineWidth = 6; tCtx.strokeRect(25, 25, 750, 500);
+        tCtx.strokeStyle = '#4facfe'; tCtx.lineWidth = 2; tCtx.strokeRect(33, 33, 734, 484);
+
+        // 標題列背景
+        tCtx.fillStyle = 'rgba(0, 0, 0, 0.4)'; tCtx.fillRect(35, 35, 730, 55);
+
+        // ✨ 自動縮小字體的工具函式
+        function drawFittedText(text, x, y, maxWidth, maxFontSize, fontWeight, color, align = 'center') {
+            let fontSize = maxFontSize;
+            tCtx.font = `${fontWeight} ${fontSize}px "微軟正黑體", "PingFang TC", "Microsoft JhengHei", sans-serif`;
+            while (tCtx.measureText(text).width > maxWidth && fontSize > 10) {
+                fontSize--;
+                tCtx.font = `${fontWeight} ${fontSize}px "微軟正黑體", "PingFang TC", "Microsoft JhengHei", sans-serif`;
+            }
+            tCtx.fillStyle = color;
+            tCtx.textAlign = align;
+            tCtx.fillText(text, x, y);
         }
 
-        // 點擊畫面其他地方時關閉下拉選單
-        window.addEventListener('click', function(e) {
-            if (!document.getElementById('customSelectBtn').contains(e.target) && !document.getElementById('dropdownOptions').contains(e.target)) {
-                document.getElementById('dropdownOptions').classList.remove('show');
+        // 使用 drawFittedText 繪製標題，限制最大寬度為 680，確保在兩側邊框內
+        drawFittedText('', 400, 70, 680, 24, '900', '#fbc531', 'center');
+
+        // 左側面板
+        tCtx.fillStyle = 'rgba(10, 20, 40, 0.7)'; tCtx.fillRect(55, 110, 260, 385);
+        tCtx.strokeStyle = '#fbc531'; tCtx.lineWidth = 2; tCtx.strokeRect(55, 110, 260, 385);
+        tCtx.fillStyle = '#1e272e'; tCtx.fillRect(85, 135, 200, 150);
+        tCtx.strokeStyle = '#4facfe'; tCtx.strokeRect(85, 135, 200, 150);
+
+        let activeSkin = SKINS_DATA.find(s => s.id === currentSkinId) || SKINS_DATA[0];
+        tCtx.font = '60px sans-serif'; tCtx.fillText(activeSkin.icon, 185, 230);
+
+        // 左側：等級職業、名字、稱號 (使用 drawFittedText 限制寬度為 220)
+        drawFittedText(`[ Lv.${playerLevel} ${CLASSES[selectedClassKey].name} ]`, 185, 315, 220, 16, 'bold', '#00d2d3');
+        
+        let nameInput = document.getElementById('player-name-input').value.trim() || "無名隊輔";
+        drawFittedText(nameInput, 185, 350, 220, 22, '900', '#f5f6fa');
+        drawFittedText(currentTitleTag, 185, 385, 220, 15, 'bold', '#ff6b81');
+
+        // 右側面板
+        tCtx.fillStyle = 'rgba(10, 20, 40, 0.7)'; tCtx.fillRect(335, 110, 410, 385);
+        tCtx.strokeStyle = '#fbc531'; tCtx.strokeRect(335, 110, 410, 385);
+        tCtx.fillStyle = 'rgba(241, 196, 15, 0.15)'; tCtx.fillRect(355, 130, 370, 95);
+        tCtx.strokeStyle = '#f1c40f'; tCtx.strokeRect(355, 130, 370, 95);
+
+        let ratingTitle = lastEndingResult ? lastEndingResult.title : '優秀隊輔';
+        let overallScore = lastEndingResult ? lastEndingResult.score : 85;
+        let grade = lastEndingResult ? lastEndingResult.grade : 'A';
+
+        drawFittedText(`★ OVERALL: ${overallScore}分`, 375, 170, 250, 28, '900', '#2ed573', 'left');
+        drawFittedText(`[${grade}]`, 705, 175, 50, 32, '900', '#f1c40f', 'right');
+        drawFittedText(`評價稱譽：${ratingTitle}`, 375, 205, 330, 15, 'bold', '#ff9f43', 'left');
+
+        tCtx.fillStyle = '#f5f6fa';
+        let statsY = 265; let lineHeight = 45;
+        function drawStatRow(label, value, color) {
+            tCtx.fillStyle = '#a4b0be'; tCtx.font = 'bold 18px "微軟正黑體", sans-serif'; tCtx.textAlign = 'left'; tCtx.fillText(label, 375, statsY);
+            tCtx.fillStyle = color || '#f5f6fa'; tCtx.textAlign = 'right'; tCtx.fillText(value, 705, statsY);
+            tCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; tCtx.lineWidth = 1; tCtx.beginPath(); tCtx.moveTo(355, statsY + 15); tCtx.lineTo(725, statsY + 15); tCtx.stroke();
+            statsY += lineHeight;
+        }
+
+        drawStatRow('⏱️ 總計耗時 (TIME)', `${finalTimeUsed} 秒`, '#4facfe');
+        drawStatRow('⭐ 隱藏考核 (SCORE)', `${currentHiddenScore} 分`, '#ffa502');
+        drawStatRow('❤️ 剩餘體力 (HP/MOOD)', `${currentMood} / ${currentMaxMood}`, currentMood < 0 ? '#ff4757' : '#2ed573');
+
+        tCtx.fillStyle = '#718093'; tCtx.font = '12px "微軟正黑體", sans-serif'; tCtx.textAlign = 'center';
+        tCtx.fillText('CAMP COUNSELOR SURVIVAL SIMULATOR - JRPG EDITION', 400, 520);
+
+        // ✨ 將 Canvas 轉成 Blob 並直接觸發下載（支援手機/電腦）
+        tempCanvas.toBlob(function(blob) {
+            let url = URL.createObjectURL(blob);
+            let link = document.createElement('a');
+            link.download = `jrpg_status_${finalTimeUsed}s.jpg`;
+            link.href = url;
+            
+            // 為了相容 Safari / Webview，需將 link 加入 DOM 後觸發
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // 釋放記憶體
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, 'image/jpeg', 0.95);
+    }
+
+    // ==========================================
+    // 🎭 【隊輔職業與天賦設定】
+    // ==========================================
+    const CLASSES = {
+        athletic: {
+            name: '體能怪物', titlePrefix: '體能狂',
+            maxMood: 15, speed: 0.38, walkStepsCost: 99999,
+            wrongPenalty: -1, bonusHiddenScore: 0, showHint: false, luckyCrisis: false
+        },
+        empath: {
+            name: '讀心大師', titlePrefix: '讀心者',
+            maxMood: 18, speed: 0.19, walkStepsCost: 8,
+            wrongPenalty: 0, bonusHiddenScore: 0, showHint: true, luckyCrisis: false
+        },
+        lucky: {
+            name: '佛系隊輔', titlePrefix: '佛系',
+            maxMood: 12, speed: 0.25, walkStepsCost: 8,
+            wrongPenalty: 0, bonusHiddenScore: 1, showHint: false, luckyCrisis: true
+        }
+    };
+    let selectedClassKey = 'athletic';
+
+    function selectClass(key) {
+        selectedClassKey = key;
+        document.querySelectorAll('.class-card').forEach(el => el.classList.remove('selected'));
+        document.getElementById('card-' + key).classList.add('selected');
+    }
+
+    // ==========================================
+    // 🚨 【隨機動態突發危機題庫】
+    // ==========================================
+    const CRISIS_POOL = [
+        {
+            title: '🚨 突發危機：便當送錯了！',
+            question: '廠商把素食便當送成魚排便當，海鮮過敏的學員快餓昏了，你該怎麼辦？',
+            choices: [
+                { text: '假裝沒看到，吃一下沒關係', moodChange: 1, timePenalty: 5, hiddenScore: -1, reply: '學員全身發癢，送急診 (體力 +1, 耗時 +5秒)' },
+                { text: '先拿餅乾給他吃', moodChange: -2, timePenalty: 0, hiddenScore: 1, best: true, reply: '學員感動到痛哭流涕！' }
+            ]
+        },
+        {
+            title: '🚨 突發危機：午後大雷雨！',
+            question: '外面突然下起狂風暴雨，走廊上的大地遊戲道具快被淋濕了！',
+            choices: [
+                { text: '站在屋簷下指揮學員去收', moodChange: 0, timePenalty: 5, hiddenScore: -1, reply: '學員越收越亂，差點滑倒！' },
+                { text: '安頓好學員，立刻搶救器材', moodChange: -2, timePenalty: -3, hiddenScore: 1, best: true, reply: '全身淋濕但保住了器材！' }
+            ]
+        },
+        {
+            title: '🚨 突發危機：音控設備大爆音！',
+            question: '教室麥克風突然發出刺耳尖叫聲，全場學員摀著耳朵躁動！',
+            choices: [
+                { text: '安撫學員並協助調整設備', moodChange: -2, timePenalty: -4, hiddenScore: 1, best: true, reply: '危機完美解除！' },
+                { text: '在台下跟著一起摀耳朵', moodChange: -1, timePenalty: 4, hiddenScore: -1, reply: '場面尷尬冷場了好久...' }
+            ]
+        },
+        {
+            title: '🚨 突發危機：學員吐了！',
+            question: '有學員吃飽亂跑突然臉色發白，眼看就要吐在地板上了！',
+            choices: [
+                { text: '開始尖叫逃跑', moodChange: -1, timePenalty: 6, hiddenScore: -1, reply: '地板慘不忍睹...' },
+                { text: '冷靜拿拖把清理乾淨', moodChange: -2, timePenalty: -2, hiddenScore: 1, best: true, reply: '滿分危機處理！' }
+            ]
+        }
+    ];
+    let triggeredCrises = 0;
+    let usedCrisisIndices = new Set();
+    
+    let crisisTime1 = 18;
+    let crisisTime2 = 50;
+
+    function randomizeCrisisTimes() {
+        crisisTime1 = Math.floor(Math.random() * 12) + 15; 
+        crisisTime2 = Math.floor(Math.random() * 20) + 45; 
+    }
+
+    // ==========================================
+    // ⚙️ 核心設定 (正計時與雙主線任務)
+    // ==========================================
+    let elapsedTime = 0;
+    const MAX_OVERTIME_SECONDS = 180;
+    let timerInterval = null; 
+    let finalTimeUsed = 0; 
+    let currentTitleTag = '【隊輔】';
+
+    const BASE_HIDDEN_SCORE = 10;
+    let currentHiddenScore = BASE_HIDDEN_SCORE;
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const dialogBox = document.getElementById('dialog-box');
+    const gameContainer = document.getElementById('game-container');
+    const systemChat = document.getElementById('hud-chat');
+
+    const TILE_SIZE = 50;
+    const COLS = 16; 
+    const ROWS = 10;
+    
+    let player = { gridX: 7, gridY: 5, pixelX: 7*TILE_SIZE, pixelY: 5*TILE_SIZE, icon: '🧚‍♀️', imgKey: 'player', facing: 'down' };
+    let currentScene = 'classroom';
+    
+    let isGameStarted = false; 
+    let isDialogActive = false;
+    let isGameOver = false;
+    let currentDialogNPC = null; 
+    let currentDialogIndex = 0;  
+    
+    let talkedTo = new Set();
+    let requiredNPCs = [];
+    let QUEST_GOAL = 12;
+
+    let collectedSupplies = 0;
+    const SUPPLY_GOAL = 3;
+
+    let currentMaxMood = 15; 
+    let currentMood = 15;
+    let stepCount = 0; 
+    let floatingTexts = [];
+
+    const textures = {};
+    function initTextures() {
+        const wood = document.createElement('canvas'); wood.width = TILE_SIZE; wood.height = TILE_SIZE; const wCtx = wood.getContext('2d');
+        wCtx.fillStyle = '#2c1e16'; wCtx.fillRect(0,0,TILE_SIZE,TILE_SIZE); 
+        wCtx.fillStyle = '#3a271d'; wCtx.fillRect(2,2,TILE_SIZE-4,TILE_SIZE-4);
+        wCtx.fillStyle = '#4a3326'; wCtx.fillRect(6,6,TILE_SIZE-12,TILE_SIZE-12);
+        textures.wood = ctx.createPattern(wood, 'repeat');
+
+        const grass = document.createElement('canvas'); grass.width = TILE_SIZE; grass.height = TILE_SIZE; const gCtx = grass.getContext('2d');
+        gCtx.fillStyle = '#1e3814'; gCtx.fillRect(0,0,TILE_SIZE,TILE_SIZE);
+        gCtx.fillStyle = '#2c521d'; gCtx.fillRect(4,4,10,10); gCtx.fillRect(24,18,12,12); gCtx.fillRect(10,30,8,8);
+        textures.grass = ctx.createPattern(grass, 'repeat');
+    }
+    initTextures();
+
+    // ==========================================
+    // 📖 擴充版劇本與地圖資料
+    // ==========================================
+    const scenes = {
+        classroom: {
+            type: 'wood',
+            objects: [
+                { x: 3, y: 3, w: 1, h: 1, icon: '🪑', imgKey: 'chair' }, { x: 5, y: 3, w: 1, h: 1, icon: '🪑', imgKey: 'chair' }, { x: 7, y: 3, w: 1, h: 1, icon: '🪑', imgKey: 'chair' }, { x: 9, y: 3, w: 1, h: 1, icon: '🪑', imgKey: 'chair' }, { x: 11, y: 3, w: 1, h: 1, icon: '🪑', imgKey: 'chair' }, { x: 13, y: 3, w: 1, h: 1, icon: '🪑', imgKey: 'chair' },
+                { x: 3, y: 7, w: 1, h: 1, icon: '🪑', imgKey: 'chair' }, { x: 5, y: 7, w: 1, h: 1, icon: '🪑', imgKey: 'chair' }, { x: 7, y: 7, w: 1, h: 1, icon: '🪑', imgKey: 'chair' }, { x: 9, y: 7, w: 1, h: 1, icon: '🪑', imgKey: 'chair' }, { x: 11, y: 7, w: 1, h: 1, icon: '🪑', imgKey: 'chair' }, { x: 13, y: 7, w: 1, h: 1, icon: '🪑', imgKey: 'chair' }
+            ],
+            items: [
+                { x: 14, y: 2, icon: '🍬', imgKey: 'candy', name: '潤喉糖', heal: 2, picked: false },
+                { x: 8, y: 6, icon: '🍬', imgKey: 'candy', name: '潤喉糖', heal: 2, picked: false },
+                { x: 2, y: 8, icon: '🍬', imgKey: 'candy', name: '潤喉糖', heal: 2, picked: false },
+                { x: 1, y: 1, icon: '📋', imgKey: 'clipboard', name: '小隊點名單', heal: 1, isSupply: true, picked: false },
+                { x: 14, y: 8, icon: '📢', imgKey: 'megaphone', name: '值星大聲公', heal: 1, isSupply: true, picked: false }
+            ],
+            portal: { x: 8, y: 9, icon: '🚪', imgKey: 'door', toScene: 'outdoor', toX: 8, toY: 1 },
+            npcs: [
+                { 
+                    x: 8, y: 1, icon: '👨‍🏫', imgKey: 'npc_guagua', title: '講師', name: '瓜瓜', canMove: false, 
+                    msgs: [
+                        '為什麼還安靜不下來？', '請各位隊輔幫我管秩序！',
+                        { question: '講師正在生氣，你要如何應對？', 
+                          choices: [
+                            { text: '滑手機不管他', moodChange: -3, hiddenScore: -1, reply: '那位隊輔！不要滑手機了！(心情大傷)' },
+                            { text: '立刻協助安撫學員', moodChange: -1, hiddenScore: 1, best: true, reply: '謝謝，終於安靜一點了。(獲得肯定)' }
+                          ] 
+                        }
+                    ], moodChange: 0 
+                },
+                { 
+                    x: 3, y: 2, icon: '👦', imgKey: 'npc_boy', title: '學員', name: '小明', canMove: true, 
+                    msgs: [
+                        '好無聊喔我要出去打球...', '我聽不懂啦...',
+                        { question: '小明不想上課，你要怎麼回應？', 
+                          choices: [
+                            { text: '大聲喝斥他安靜', moodChange: -3, hiddenScore: -1, reply: '凶屁凶！(小明大哭，身心俱疲)' },
+                            { text: '堅定安撫並陪他', moodChange: 0, hiddenScore: 0, best: true, reply: '好啦...既然你願意陪我，我就聽。' }
+                          ] 
+                        }
+                    ] 
+                },
+                { 
+                    x: 3, y: 6, icon: '🧒', imgKey: 'npc_boy', title: '學員', name: '小偉', canMove: false, 
+                    msgs: [
+                        '老師我剛剛有回答問題', '為什麼沒有給我點點貼紙',
+                        { question: '小偉覺得不公平，你要怎麼做？',
+                          choices: [
+                            { text: '馬上補給他一張貼紙', moodChange: 0, hiddenScore: 0, best: true, reply: '耶！謝謝老師！' },
+                            { text: '叫他安靜不要吵鬧', moodChange: -2, hiddenScore: -1, reply: '老師偏心！(小偉鬧脾氣)' }
+                          ]
+                        }
+                    ] 
+                },
+                { 
+                    x: 11, y: 2, icon: '👦', imgKey: 'npc_boy', title: '學員', name: '大華', canMove: true,
+                    msgs: [
+                        '老師你不要管我', '幹嘛管這麼多...',
+                        { question: '大華正在到處亂跑，你要怎麼做？',
+                          choices: [
+                            { text: '讓他原地罰站', moodChange: -4, hiddenScore: -1, reply: '我不要！(大華跑走，場面失控)' },
+                            { text: '先讓他冷靜，說明規定', moodChange: 0, hiddenScore: 0, best: true, reply: '好吧。(大華安靜了下來)' }
+                          ]
+                        }
+                    ] 
+                },
+                { 
+                    x: 11, y: 6, icon: '👧', imgKey: 'npc_girl', title: '學員', name: '小美', canMove: false,
+                    msgs: [
+                        '小明好吵喔...', '老師你可以叫他出去嗎？',
+                        { question: '小美被影響了，你要怎麼辦？',
+                          choices: [
+                            { text: '跟他說再忍耐一下', moodChange: -2, hiddenScore: -1, reply: '不管啦我要回家！(受到影響)' },
+                            { text: '告訴他你會去提醒小明', moodChange: 0, hiddenScore: 0, best: true, reply: '好，謝謝老師。' }
+                          ]
+                        }
+                    ] 
+                },
+                { 
+                    x: 5, y: 5, icon: '👧', imgKey: 'npc_girl', title: '學員', name: '小安', canMove: false,
+                    msgs: [
+                        '嗚嗚嗚...我想媽媽...', '我現在想要回家...',
+                        { question: '小安突然想家哭了起來，你該怎麼辦？',
+                          choices: [
+                            { text: '跟他說大家都在看你喔', moodChange: -3, hiddenScore: -1, reply: '嗚哇哇哇！(哭得更大聲了，心情 -3)' },
+                            { text: '遞給他衛生紙，陪他在旁邊平復心情', moodChange: -1, hiddenScore: 1, best: true, reply: '吸吸鼻子...我心情好了，我去找大家一起玩。(破涕為笑)' }
+                          ]
+                        }
+                    ] 
+                },
+                { 
+                    x: 13, y: 5, icon: '👦', imgKey: 'npc_boy', title: '學員', name: '阿哲', canMove: true,
+                    msgs: [
+                        '嘿嘿，老師你看我！', '我把彩色筆塗滿整個臉了！',
+                        { question: '阿哲正在把彩色筆往桌上跟臉上抹，你要？',
+                          choices: [
+                            { text: '趕快抓他去洗臉，並幫他擦乾淨', moodChange: -1, hiddenScore: 1, best: true, reply: '謝謝老師！(危機解除)' },
+                            { text: '崩潰大叫叫他不准動', moodChange: -3, hiddenScore: -1, reply: '阿哲嚇一跳直接拿你的衣服來擦！(衣服全毀 心情 -3)' }
+                          ]
+                        }
+                    ] 
+                }
+            ]
+        },
+        outdoor: {
+            type: 'grass', 
+            objects: [
+                { x: 2, y: 2, w: 2, h: 2, icon: '🌳', imgKey: 'tree_big' }, { x: 3, y: 1, w: 1, h: 1, icon: '🌲', imgKey: 'tree_small' }, { x: 12, y: 2, w: 1, h: 1, icon: '🌲', imgKey: 'tree_small' },
+                { x: 11, y: 4, w: 2, h: 2, icon: '⛺', imgKey: 'tent' }, { x: 3, y: 7, w: 2, h: 2, icon: '⛺', imgKey: 'tent' }  
+            ],
+            items: [
+                { x: 14, y: 8, icon: '🧋', imgKey: 'boba', name: '珍奶', heal: 5, picked: false },
+                { x: 14, y: 5, icon: '🧋', imgKey: 'boba', name: '珍奶', heal: 5, picked: false },
+                { x: 1, y: 8, icon: '🧋', imgKey: 'boba', name: '珍奶', heal: 5, picked: false },
+                { x: 8, y: 5, icon: '🍌', imgKey: 'banana', name: '香蕉皮', heal: -2, picked: false },
+                { x: 14, y: 1, icon: '🚩', imgKey: 'flag', name: '傳說小隊旗', heal: 1, isSupply: true, picked: false }
+            ],
+            portal: { x: 8, y: 0, icon: '🚪', imgKey: 'door', toScene: 'classroom', toX: 8, toY: 8 },
+            npcs: [
+                { 
+                    x: 7, y: 4, icon: '🧢', imgKey: 'npc_man', title: '幹部', name: '總籌', canMove: true,
+                    msgs: [
+                        '大地跑跑馬上要開始了！', '為什麼還在場佈？？？',
+                        { question: '總籌正在焦慮，你要如何回應？',
+                          choices: [
+                            { text: '不知道怎麼辦，在原地發呆', moodChange: -4, hiddenScore: -1, reply: '完啦完啦要開天窗了！(慌張)' },
+                            { text: '捲起袖子一起加快場佈', moodChange: -1, hiddenScore: 0, best: true, reply: '快點快點！(體力消耗 心情 -1)' }
+                          ]              
+                        }
+                    ] 
+                },
+                { 
+                    x: 6, y: 6, icon: '🕶️', imgKey: 'npc_man', title: '幹部', name: '副籌', canMove: true,
+                    msgs: [
+                        '你們小隊有小孩在亂跑', '趕快去把他抓回來',
+                        { question: '你的回應是？',
+                          choices: [
+                            { text: '其他人會負責的', moodChange: -4, hiddenScore: -1, reply: '(被督導發現念了你們一頓)' },
+                            { text: '(立刻跑起來開始找人)', moodChange: -2, hiddenScore: 0, best: true, reply: '成功把人找回來，但你覺得累。(心情 -2)' }
+                          ]              
+                        }
+                    ] 
+                },
+                { 
+                    x: 12, y: 7, icon: '👨‍🦱', imgKey: 'npc_man', title: '幹部', name: '邱曉昕', canMove: false, 
+                    msgs: [
+                        '我們督導說要請你們開始雨備方案', '你說沒有下雨？',
+                        { question: '面對突如其來的指令，你決定？',
+                          choices: [
+                            { text: '耐心解釋真的沒下雨', moodChange: -3, hiddenScore: -1, reply: '可是督導說... (溝通無效，心累)' },
+                            { text: '直接果斷切換雨備', moodChange: -1, hiddenScore: 0, best: true, reply: '好的，大家動起來！(覺得可惜 心情-1)' }
+                          ]
+                        }
+                    ] 
+                },
+                { 
+                    x: 2, y: 5, icon: '👩‍🎨', imgKey: 'npc_woman', title: '大地跑跑組', name: 'Jimmy', canMove: false, 
+                    msgs: [
+                        '完蛋了！剛剛一陣怪風吹過來！', '我們熬夜畫的關卡海報裂成兩半了！',
+                        { question: 'Jimmy快哭出來了，你該怎麼幫忙？',
+                          choices: [
+                            { text: '拿出隨身雙面膠與膠帶火速急救固定', moodChange: -1, hiddenScore: 1, best: true, reply: '太神啦！完全看不出來破掉過！(獲得感激)' },
+                            { text: '跟他說反正學員不在乎', moodChange: -3, hiddenScore: -1, reply: '那是我熬夜畫三天的心血欸！(Jimmy爆氣 心情 -3)' }
+                          ]
+                        }
+                    ] 
+                },
+                { 
+                    x: 14, y: 4, icon: '👨‍🍳', imgKey: 'npc_chef', title: '幹部', name: '場活股', canMove: true, 
+                    msgs: [
+                        '慘了慘了！我們的晚餐...', '有十份便當餿掉了！隊輔可能要等一下，讓學員先吃',
+                        { question: '晚餐少訂了，你要怎麼處理？',
+                          choices: [
+                            { text: '先搶先贏，學員沒吃關我什麼事', moodChange: -2, hiddenScore: -1, reply: '學員沒吃飽，現場大吵起來！(心情 -2)' },
+                            { text: '接受這件事實，只是晚點吃而已還能忍耐', moodChange: -1, hiddenScore: 1, best: true, reply: '感謝體諒！我們已經馬上聯絡廠商補送了！(考核 +1)' }
+                          ]
+                        }
+                    ] 
+                }
+            ]
+        }
+    };
+
+    for (let s in scenes) {
+        for (let npc of scenes[s].npcs) {
+            npc.gridX = npc.x; npc.gridY = npc.y;
+            npc.pixelX = npc.x * TILE_SIZE; npc.pixelY = npc.y * TILE_SIZE;
+            npc.startX = npc.x; npc.startY = npc.y;
+            if (!requiredNPCs.includes(npc.name)) {
+                requiredNPCs.push(npc.name);
+            }
+        }
+    }
+    QUEST_GOAL = requiredNPCs.length;
+
+    function shuffleArray(arr) {
+        let copy = [...arr];
+        for (let i = copy.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+    }
+
+    // ==========================================
+    // 🏆 【全球獨立雙欄排行榜系統】
+    // ==========================================
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwnCHgVBAoimJS5h94ZpB5ocTBlbadSVAmbV0IkWZ65YsXNP2gY9i3pVD7AyfibTthw/exec';
+
+    // 🔧 全新升級：同名字去重 + 數字防呆保護
+    function renderSeparateLeaderboards(board) {
+        // 1. 數字化正規化（雙保險：即便後端回傳異常值、時間字串也不會爆）
+        board = (board || []).map(entry => ({
+            name: entry.name || '無名隊輔',
+            time: Number(entry.time) || 99999,
+            level: Number(entry.level) || 1
+        })).filter(e => e.time < 99999);
+
+        // 2. 🏆 等級排行榜：同名只保留「最高等級」紀錄（同級時取最快時間）
+        const levelMap = new Map();
+        board.forEach(e => {
+            const prev = levelMap.get(e.name);
+            if (!prev
+                || e.level > prev.level
+                || (e.level === prev.level && e.time < prev.time)) {
+                levelMap.set(e.name, e);
             }
         });
+        const levelBoard = Array.from(levelMap.values())
+            .sort((a, b) => b.level - a.level || a.time - b.time)
+            .slice(0, 5);
 
-        // ==========================================
-        // 音效系統 (使用瀏覽器內建 Web Audio API 發出科幻音效)
-        // ==========================================
-        let audioCtx = null;
-
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // 3. ⚡ 速度排行榜：同名只保留「最快時間」紀錄（同秒時取最高等級）
+        const speedMap = new Map();
+        board.forEach(e => {
+            const prev = speedMap.get(e.name);
+            if (!prev
+                || e.time < prev.time
+                || (e.time === prev.time && e.level > prev.level)) {
+                speedMap.set(e.name, e);
             }
+        });
+        const speedBoard = Array.from(speedMap.values())
+            .sort((a, b) => a.time - b.time || b.level - a.level)
+            .slice(0, 5);
+
+        // === 渲染 HTML 邏輯 ===
+        let levelHTML = '';
+        if (levelBoard.length === 0) {
+            levelHTML = '<div style="text-align:center; color:#a4b0be; padding:3px;">暫無紀錄</div>';
+        } else {
+            levelBoard.forEach((entry, index) => {
+                let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
+                let safeName = entry.name;
+                levelHTML += `<div class="leaderboard-row"><span>${medal} <b>${safeName}</b></span><span style="color:var(--warning);">Lv.${entry.level}</span></div>`;
+            });
         }
 
-        // 播放成功音效 (高亢且愉快的雙音階登入成功聲)
-        function playSuccessSound() {
-            try {
-                initAudio();
-                const now = audioCtx.currentTime;
-                
-                const osc1 = audioCtx.createOscillator();
-                const gain1 = audioCtx.createGain();
-                osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(523.25, now); // C5
-                osc1.frequency.setValueAtTime(659.25, now + 0.1); // E5
-                osc1.frequency.setValueAtTime(783.99, now + 0.2); // G5
-                osc1.frequency.setValueAtTime(1046.50, now + 0.3); // C6
-
-                gain1.gain.setValueAtTime(0.2, now);
-                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-
-                osc1.connect(gain1);
-                gain1.connect(audioCtx.destination);
-
-                osc1.start(now);
-                osc1.stop(now + 0.6);
-            } catch (e) {
-                console.log("Audio not supported or blocked", e);
-            }
+        let speedHTML = '';
+        if (speedBoard.length === 0) {
+            speedHTML = '<div style="text-align:center; color:#a4b0be; padding:3px;">暫無紀錄</div>';
+        } else {
+            speedBoard.forEach((entry, index) => {
+                let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
+                let safeName = entry.name;
+                speedHTML += `<div class="leaderboard-row"><span>${medal} <b>${safeName}</b></span><span style="color:var(--success);">${entry.time}s</span></div>`;
+            });
         }
 
-        // 播放錯誤音效 (低沉急促的警報嗶嗶聲)
-        function playErrorSound() {
+        document.getElementById('start-level-leaderboard-list').innerHTML = levelHTML;
+        document.getElementById('start-speed-leaderboard-list').innerHTML = speedHTML;
+
+        if (document.getElementById('ending-level-leaderboard-list')) {
+            document.getElementById('ending-level-leaderboard-list').innerHTML = levelHTML;
+            document.getElementById('ending-speed-leaderboard-list').innerHTML = speedHTML;
+        }
+    }
+
+    function loadStartLeaderboard() {
+        fetch(WEB_APP_URL)
+        .then(res => res.text())
+        .then(text => {
             try {
-                initAudio();
-                const now = audioCtx.currentTime;
+                let board = JSON.parse(text);
+                renderSeparateLeaderboards(board);
+            } catch(e) {
+                document.getElementById('start-level-leaderboard-list').innerHTML = '<div style="text-align:center; color:var(--danger);">❌ 讀取失敗</div>';
+                document.getElementById('start-speed-leaderboard-list').innerHTML = '<div style="text-align:center; color:var(--danger);">❌ 讀取失敗</div>';
+            }
+        })
+        .catch(() => {
+            document.getElementById('start-level-leaderboard-list').innerHTML = '<div style="text-align:center; color:var(--danger);">❌ 連線失敗</div>';
+            document.getElementById('start-speed-leaderboard-list').innerHTML = '<div style="text-align:center; color:var(--danger);">❌ 連線失敗</div>';
+        });
+    }
 
-                for (let i = 0; i < 2; i++) {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(150, now + (i * 0.15));
-                    
-                    gain.gain.setValueAtTime(0.25, now + (i * 0.15));
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + (i * 0.15) + 0.12);
+    loadStartLeaderboard();
 
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
+        function submitScore() {
+        let nameInput = document.getElementById('player-name-input').value.trim();
+        let rawName = nameInput === "" ? "無名隊輔" : nameInput;
+        
+        document.getElementById('score-submit-area').style.display = 'none';
+        document.getElementById('ending-leaderboard').style.display = 'flex';
+        document.getElementById('restart-btn').style.display = 'block';
+        document.getElementById('ending-level-leaderboard-list').innerHTML = '<div style="text-align:center; padding: 10px; color:#fff;">📡 上傳中...</div>';
+        document.getElementById('ending-speed-leaderboard-list').innerHTML = '<div style="text-align:center; padding: 10px; color:#fff;">📡 上傳中...</div>';
 
-                    osc.start(now + (i * 0.15));
-                    osc.stop(now + (i * 0.15) + 0.12);
+        fetch(WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ 
+                name: rawName, // 👈 這裡改傳送純名字
+                time: finalTimeUsed, 
+                level: playerLevel 
+            })
+        })
+        .then(res => res.text())
+        .then(text => {
+            try {
+                let board = JSON.parse(text);
+                renderSeparateLeaderboards(board);
+            } catch(e) {
+                document.getElementById('ending-level-leaderboard-list').innerHTML = '<div style="text-align:center; color:var(--danger);">❌ 解析失敗</div>';
+                document.getElementById('ending-speed-leaderboard-list').innerHTML = '<div style="text-align:center; color:var(--danger);">❌ 解析失敗</div>';
+            }
+        })
+        .catch(() => {
+            document.getElementById('ending-level-leaderboard-list').innerHTML = '<div style="text-align:center; color:var(--danger);">❌ 失敗</div>';
+            document.getElementById('ending-speed-leaderboard-list').innerHTML = '<div style="text-align:center; color:var(--danger);">❌ 失敗</div>';
+        });
+    }
+
+    // ==========================================
+    // 🚀 遊戲核心與突發事件邏輯
+    // ==========================================
+    function logSystem(msg, type="info") {
+        let div = document.createElement('div'); div.className = `chat-msg ${type}`; div.innerText = msg;
+        systemChat.appendChild(div);
+        if(systemChat.childNodes.length > 5) systemChat.removeChild(systemChat.firstChild);
+    }
+
+    function applyClassStats() {
+        const cls = CLASSES[selectedClassKey];
+        currentMaxMood = cls.maxMood;
+        currentMood = cls.maxMood;
+        currentHiddenScore = BASE_HIDDEN_SCORE + cls.bonusHiddenScore;
+        
+        let requiredXP = playerLevel * 5;
+        document.getElementById('player-name').innerText = `Lv.${playerLevel} ${cls.name}`;
+        document.getElementById('player-xp-text').innerText = `${Math.round(playerXP * 10) / 10}/${requiredXP}`;
+        let xpPct = Math.min(100, (playerXP / requiredXP) * 100);
+        document.getElementById('xp-bar').style.width = xpPct + '%';
+        
+        updateMoodUI();
+        updateQuestUI();
+    }
+
+    function startGame() {
+        applySelectedSkin();
+        applyClassStats();
+        randomizeCrisisTimes();
+        isGameStarted = true;
+        document.getElementById('start-screen-overlay').style.display = 'none';
+        logSystem(`[系統] 以「${CLASSES[selectedClassKey].name}」身分開始正計時挑戰！`, "system");
+        startTimer(); 
+    }
+
+    function updateTimerUI() {
+        const timerDisplay = document.getElementById('timer-display');
+        timerDisplay.innerText = `⏱️ ${elapsedTime} 秒`;
+        timerDisplay.style.color = elapsedTime >= 120 ? 'var(--warning)' : '#fff';
+    }
+
+    function startTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        updateTimerUI(); 
+        timerInterval = setInterval(() => {
+            if (isGameOver || !isGameStarted || isDialogActive) return; 
+            elapsedTime++; 
+            updateTimerUI();
+            
+            if ((elapsedTime === crisisTime1 && triggeredCrises === 0) || (elapsedTime === 55 && triggeredCrises === 1)) {
+                triggerRandomCrisis();
+                return;
+            }
+
+            if (elapsedTime >= MAX_OVERTIME_SECONDS) triggerGameOver("timeup");
+        }, 1000);
+    }
+
+    function triggerRandomCrisis() {
+        triggeredCrises++;
+        isMoving = false;
+        pathQueue = [];
+
+        let available = CRISIS_POOL.map((_, idx) => idx).filter(idx => !usedCrisisIndices.has(idx));
+        let pickIdx = available[Math.floor(Math.random() * available.length)];
+        usedCrisisIndices.add(pickIdx);
+        let crisis = CRISIS_POOL[pickIdx];
+
+        triggerShake();
+        logSystem(crisis.title, "damage");
+
+        isDialogActive = true;
+        dialogBox.classList.add('crisis-mode');
+        dialogBox.style.display = 'block';
+        document.getElementById('dialog-name').innerText = crisis.title;
+        document.getElementById('dialog-text').innerText = crisis.question;
+        document.getElementById('dialog-hint').style.display = 'none';
+        
+        const choicesContainer = document.getElementById('choices-container');
+        choicesContainer.innerHTML = '';
+
+        const shuffledChoices = shuffleArray(crisis.choices);
+
+        shuffledChoices.forEach(choice => {
+            let btn = document.createElement('div');
+            btn.className = 'choice-btn';
+            let hintTag = (CLASSES[selectedClassKey].showHint && choice.best) ? ' ✨(推薦)' : '';
+            btn.innerText = choice.text + hintTag;
+
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                let finalMoodCost = choice.moodChange;
+                let replyText = choice.reply;
+
+                if (CLASSES[selectedClassKey].luckyCrisis && finalMoodCost < 0) {
+                    finalMoodCost = 1;
+                    replyText += '\n🍀【天選強運觸發】意外獲得學員塞給你的點心，免除扣血並恢復 1 點體力！';
                 }
-            } catch (e) {
-                console.log("Audio not supported or blocked", e);
-            }
-        }
 
-        // ==========================================
-        // 動態訊息系統設定
-        // ==========================================
-        const messages = [
-            "> 用戶ID: 5107 已成功登入安全終端機。<br>> 系統自檢完成：發現主動力艙不明損壞！",
-            "> 工程部回報：必須輸入『修復部位圖形』、『最大能源線路顏色』、『發動指令』與『寶藏啟動密碼』。",
-            "> ⚠️ 警告：35分鐘後將自動啟動全艦自毀模式，請盡速完成解碼！",
-            "> 提示：切勿亂驗證，以免加速系統過載或觸發安全鎖定！",
-            "> 總部無線電：指揮官，請仔細檢查各項線索，我們正在等待您的好消息...",
-            "> 指揮官：幫我找到臥底是誰...",
-            "> 在非洲，每一分鐘就有60秒過去",
-            "> 好 那今天呢 風光明媚風和日麗 因爲我以前在唸書的時候 我常常覺得很奇怪就是我到學校然後看他們吃什麼早餐都是吃一份蛋餅配一杯奶茶 或是 一個漢堡配一杯奶茶 或是一份蘿蔔糕配一杯奶茶 每次吃完都說啊我吃飽了我心裡就想說這真的可以吃飽？因爲你知道我通常早餐我都點3份可能 3個 我想說這樣就能吃飽？一定是唬人的嘛 我才想到說大家都是要面子的 沒有沒有 我都帶好幾份去吃 那是你嘛 你不要臉嘛 我說正常的 我就想說 不行 我們一定要做個企劃 就是有一天要讓自己的胃滿足 大滿足 所以今天的企劃就是 早餐吃到飽",
-            "> 鼎王一桌4個人低消650元任你吃啊，一個150元湯底，再點個50元的油條，就坐在那邊吃，不用受那個鳥氣，白飯無限盛啊！若飯不夠，店員會跟你90度鞠躬，「貴賓對不起，我們現在白飯在煮，需要等一下，不好意思，貴賓」。我去 過鼎王啊！這種態度的啊！鼎王把你當貴賓，點菜的、送菜的還是個美女，不吃飯還有得看，喝完水「欸，我要水」冰水一壺，去鼎王我是不點飲料的啊，冰水一壺冰水一壺冰水一壺，豆腐鴨血豆腐鴨血豆腐鴨血冰水冰水冰水冰水就吃飽啦，冰水無限喝，烏梅湯一壺120，早就給拒絕了",
-            "> 你從桃園新竹，我開去高雄吃麻油雞！ 好，你從…… 你從新竹… 你從桃園… 你從… 你從… 你從桃園新竹！你從桃園新竹！你從桃園新竹！ 好，你從桃園新竹…… 你從桃園新竹！你從桃園新竹！你從桃園新竹！你從桃園新竹！你從桃園新竹！你從桃園新竹到台北吃麻油雞！ 聽到了，從桃園新竹，聽到了。 （偷笑）好，你從桃園新竹要開車吃麻油雞到台北，然後你吃完麻油雞跟朋友唱歌，然後你說你會搭計程車回桃園新竹！ 好啦，隨便啦，我沒有辦法和你溝通。 "   
-        ];
+                changeMood(finalMoodCost);
+                if (isGameOver) return;
 
-        let currentMsgIndex = 0;
-        const terminalEl = document.getElementById('dynamic-terminal');
+                let xpGain = choice.best ? 1.0 : 0.5;
+                addXP(xpGain, player.pixelX + TILE_SIZE/2, player.pixelY);
 
-        function rotateTerminalMessage() {
-            terminalEl.innerHTML = messages[currentMsgIndex];
-            currentMsgIndex = (currentMsgIndex + 1) % messages.length;
-        }
+                if (choice.timePenalty !== 0) {
+                    elapsedTime = Math.max(0, elapsedTime + choice.timePenalty);
+                    updateTimerUI();
+                    let tColor = choice.timePenalty < 0 ? '#2ed573' : '#ffa502';
+                    let tSign = choice.timePenalty < 0 ? `${choice.timePenalty}秒` : `+${choice.timePenalty}秒`;
+                    addFloatingText(player.pixelX + TILE_SIZE/2, player.pixelY - 20, tSign, tColor);
+                }
 
-        rotateTerminalMessage();
-        setInterval(rotateTerminalMessage, 5000);
-
-        // ==========================================
-        // 驗證邏輯
-        // ==========================================
-        function verifyAccess() {
-            const val1 = document.getElementById('input1').value.trim();
-            const val2 = document.getElementById('input2').value.trim();
-            const val3 = document.getElementById('input3').value.trim();
-            const val4 = document.getElementById('input4').value.trim();
-            
-            const messageContainer = document.getElementById('message-container');
-            
-            // 正確答案設定
-            const ans1 = '第三隻外星人的角';
-            const ans2 = '黃色';
-            const ans3 = '2026';
-            const ans4 = '67236623';
-
-            messageContainer.classList.remove('hidden');
-
-            if (val1 === ans1 && val2 === ans2 && val3 === ans3 && val4 === ans4) {
-                // 播放成功音效
-                playSuccessSound();
-
-                // 成功狀態
-                messageContainer.innerHTML = `
-                    <div class="message-box bg-green-900/40 border border-green-400 p-6 text-center shadow-[0_0_20px_rgba(34,197,94,0.6)] animate-pulse relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-400 to-transparent opacity-50 animate-pulse"></div>
-                        <h2 class="text-2xl sm:text-4xl font-black text-green-400 tracking-widest text-shadow-[0_0_10px_rgba(34,197,94,0.8)]">密碼正確 飛船已啟動</h2>
-                        <p class="text-green-300 mt-2 text-sm font-mono tracking-widest">SYSTEM ONLINE // ENGINES IGNITED // ENJOY THE RIDE</p>
-                    </div>
-                `;
-                document.querySelector('.panel-container').style.boxShadow = "0 0 50px rgba(34, 197, 94, 0.4), inset 0 0 30px rgba(34, 197, 94, 0.2)";
-                document.querySelector('.panel-container').style.borderColor = "rgba(34, 197, 94, 0.6)";
-            } else {
-                // 播放錯誤警報音效
-                playErrorSound();
-
-                // 失敗/警告狀態
-                messageContainer.innerHTML = `
-                    <div class="message-box bg-red-900/40 border border-red-500 p-6 text-center shadow-[0_0_20px_rgba(239,68,68,0.6)] relative overflow-hidden">
-                         <div class="absolute inset-0 bg-red-500/10 pointer-events-none" style="animation: blink 0.5s infinite;"></div>
-                        <h2 class="text-xl sm:text-2xl font-black text-red-500 tracking-widest text-shadow-[0_0_10px_rgba(239,68,68,0.8)]">警告：密碼錯誤，拒絕存取</h2>
-                        <p class="text-red-300 mt-2 text-sm font-mono tracking-widest">ERROR CODE: 0xDEADBEEF // PLEASE CHECK THE LOGS</p>
-                    </div>
-                `;
-                document.querySelector('.panel-container').style.boxShadow = "0 0 50px rgba(239, 68, 68, 0.4), inset 0 0 30px rgba(239, 68, 68, 0.2)";
-                document.querySelector('.panel-container').style.borderColor = "rgba(239, 68, 68, 0.6)";
+                currentHiddenScore += choice.hiddenScore;
+                document.getElementById('dialog-text').innerText = replyText;
+                choicesContainer.style.display = 'none';
+                document.getElementById('dialog-hint').style.display = 'block';
+                document.getElementById('dialog-hint').innerText = '▼ 點擊解除危機';
                 
-                // 短暫震動效果
-                const panel = document.querySelector('.panel-container');
-                panel.animate([
-                    { transform: 'translateX(0)' },
-                    { transform: 'translateX(-10px)' },
-                    { transform: 'translateX(10px)' },
-                    { transform: 'translateX(-10px)' },
-                    { transform: 'translateX(10px)' },
-                    { transform: 'translateX(0)' }
-                ], { duration: 400, easing: 'ease-in-out' });
+                currentDialogNPC = { msgs: [''] };
+                currentDialogIndex = 1;
+            };
+            choicesContainer.appendChild(btn);
+        });
+        choicesContainer.style.display = 'flex';
+    }
+
+    function addFloatingText(x, y, text, color) { floatingTexts.push({ x: x, y: y, text: text, color: color, life: 1.0 }); }
+    function triggerShake() { gameContainer.classList.remove('shake'); void gameContainer.offsetWidth; gameContainer.classList.add('shake'); }
+
+    function updateMoodUI() {
+        const bar = document.getElementById('hp-bar'); const text = document.getElementById('mood-text');
+        let percentage = Math.max(0, Math.min(100, (currentMood / currentMaxMood) * 100));
+        bar.style.width = percentage + '%'; 
+        text.innerText = `${currentMood}/${currentMaxMood}`;
+        
+        if (currentMood < 0) {
+            text.style.color = 'var(--danger)';
+            bar.style.background = 'var(--danger)';
+        } else if (currentMood > (currentMaxMood/2)) {
+            text.style.color = '#a4b0be';
+            bar.style.background = 'var(--success)'; 
+        } else if (currentMood > (currentMaxMood/4)) {
+            text.style.color = '#a4b0be';
+            bar.style.background = 'var(--warning)'; 
+        } else {
+            text.style.color = '#a4b0be';
+            bar.style.background = 'var(--danger)'; 
+        }
+    }
+
+    function changeMood(amount, sourceX = player.pixelX, sourceY = player.pixelY) {
+        if (amount === 0) return;
+        currentMood = currentMood + amount; 
+        if (currentMood > currentMaxMood) currentMood = currentMaxMood;
+        updateMoodUI();
+        
+        let color = amount > 0 ? '#2ed573' : '#ff4757'; 
+        let text = amount > 0 ? `+${amount}` : `${amount}`;
+        addFloatingText(sourceX + TILE_SIZE/2, sourceY, text, color);
+
+        if (amount > 0) logSystem(`[恢復] 獲得了 ${amount} 點體力`, "heal");
+        else logSystem(`[扣除] 失去了 ${Math.abs(amount)} 點體力`, "damage");
+
+        if (amount <= -3) triggerShake();
+        if (currentMood <= 0) {
+            logSystem(`[警告] 體力已耗盡！你進入了「過勞狀態」，移動速度大幅下降！`, "damage");
+        }
+    }
+
+    function checkAllQuestsCompleted() {
+        if (talkedTo.size >= QUEST_GOAL && collectedSupplies >= SUPPLY_GOAL && !isDialogActive) {
+            triggerVictory();
+        } else if (talkedTo.size >= QUEST_GOAL && collectedSupplies < SUPPLY_GOAL) {
+            logSystem(`[提示] 還差 ${SUPPLY_GOAL - collectedSupplies} 個遺失物資未找齊！`, "info");
+            addFloatingText(player.pixelX + TILE_SIZE/2, player.pixelY - 15, `還差 ${SUPPLY_GOAL - collectedSupplies} 個物資!`, '#ffa502');
+        }
+    }
+
+    // ==========================================
+    // 🏅 【Overall 評分與多重結局系統】
+    // ==========================================
+    function evaluateEnding(timeUsed) {
+        let rawScore = 60 + (currentHiddenScore * 2.5) + (currentMood * 1.5) - (timeUsed * 0.15);
+        let score = Math.min(100, Math.max(25, Math.round(rawScore)));
+        let grade = score >= 95 ? 'S+' : score >= 90 ? 'S' : score >= 80 ? 'A' : score >= 70 ? 'B' : 'C';
+
+        if (currentMood < 0 && currentHiddenScore >= 5) {
+            return {
+                icon: '😵', title: '身體透支·過勞倒地！', tag: '【💀燃燒殆盡的天兵】', color: 'var(--danger)',
+                score: score, grade: grade,
+                desc: '雖然你成功撐到最後完成了任務，但體力透支到了負分（分數：' + currentMood + '）！你在結業式最後一刻直接倒地昏迷，被救護車載走了...'
+            };
+        } else if (currentMood < 0 && currentHiddenScore < 5) {
+            return {
+                icon: '☠️', title: '身體透支·過勞倒地.營隊爆炸！', tag: '【💀頂級大雷包】', color: 'var(--danger)',
+                score: score, grade: grade,
+                desc: '雖然你成功撐到最後完成了任務，但體力透支到了負分（分數：' + currentMood + '）！你在結業式最後一刻直接倒地昏迷，被救護車載走了...營隊還因為你的一系列錯誤行動毀了'
+            };
+        } else if (timeUsed <= 45 && currentHiddenScore >= 13) {
+            return {
+                icon: '⚡', title: '光速控場之神！', tag: '【⚡光速控場之神】', color: '#00f2fe',
+                score: score, grade: grade,
+                desc: '你以不可思議的極限速度擺平了所有學員幹部並找齊所有物資，同時兼顧完美的耐心與技巧！營隊歷史將永遠流傳你的神話！'
+            };
+        } else if (currentHiddenScore >= 15) {
+            return {
+                icon: '👑', title: '零負評傳說隊輔！', tag: '【👑零負評傳說隊輔】', color: 'var(--warning)',
+                score: score, grade: grade,
+                desc: '不僅完美解決所有人的問題，連突發危機也處理得滴水不漏！全場學員哭著捨不得你走，總籌直接跪求你明年繼續當幹部！'
+            };
+        } else if (currentMood <= 3 && currentHiddenScore >= 11) {
+            return {
+                icon: '👼', title: '燃燒生命的天使！', tag: '【👼燃燒生命的天使】', color: '#ff9ff3',
+                score: score, grade: grade,
+                desc: '為了讓營隊完美進行，你把最後一滴體力都奉獻給了孩子們。下營合照時你雖然累到靈魂出竅，但你是最溫柔的守護神！'
+            };
+        } else if (currentMood >= 12 && currentHiddenScore >= 10) {
+            return {
+                icon: '😎', title: '優雅控場大師！', tag: '【😎優雅控場大師】', color: 'var(--success)',
+                score: score, grade: grade,
+                desc: '別人在營隊裡跑得滿頭大汗，你卻一邊喝著珍奶、一邊優雅地把所有危機與物資順手解決，體力還多到可以再帶三個梯次！'
+            };
+        } else if (currentHiddenScore <= 6) {
+            return {
+                icon: '🔥', title: '暴走鐵血教官！', tag: '【🔥爆走鐵血教官】', color: 'var(--danger)',
+                score: score, grade: grade,
+                desc: '雖然在時間內走完了流程，但你一路吼小孩、放生幹部！全場學員看到你都嚇得發抖，堪稱營隊史上最凶狠的傳奇人物！'
+            };
+        } else if (currentHiddenScore >= 10) {
+            return {
+                icon: '🏆', title: '優秀隊輔！', tag: '【🏆優秀隊輔】', color: 'var(--warning)',
+                score: score, grade: grade,
+                desc: '面對各種失控場面與突發危機，你展現了極佳的抗壓性與成熟度，順利找齊物資並帶領小隊平安下營！'
+            };
+        } else {
+            return {
+                icon: '😅', title: '驚險過關的菜鳥', tag: '【😅菜鳥】', color: '#a4b0be',
+                score: score, grade: grade,
+                desc: '雖然壓線撐過了營隊，但處理危機的方式稍微急躁了一點，檢討會上被總籌小小念了一下，下次再多點耐心吧！'
+            };
+        }
+    }
+
+    function triggerGameOver(reason = "mood") {
+        isGameOver = true; clearInterval(timerInterval); 
+        dialogBox.style.display = 'none'; dialogBox.classList.remove('crisis-mode');
+        isDialogActive = false; currentDialogNPC = null;
+        
+        const overlay = document.getElementById('ending-overlay');
+        const icon = document.getElementById('ending-icon'); const title = document.getElementById('ending-title'); const desc = document.getElementById('ending-desc');
+        const badge = document.getElementById('ending-badge');
+        
+        document.getElementById('score-submit-area').style.display = 'none';
+        document.getElementById('ending-leaderboard').style.display = 'none';
+        document.getElementById('restart-btn').style.display = 'block';
+
+        if (reason === "timeup") {
+            icon.innerText = '⏳'; title.innerText = '任務超時'; title.style.color = 'var(--warning)';
+            badge.style.display = 'inline-block'; badge.innerText = '獲得稱號：【🐢 太慢啦！】';
+            desc.innerHTML = '耗時超過 180 秒，營隊大混亂，進度嚴重落後...<br>下營檢討會被電爆了。';
+        } else {
+            icon.innerText = '💀'; title.innerText = '體力耗盡'; title.style.color = 'var(--danger)';
+            badge.style.display = 'inline-block'; badge.innerText = '獲得稱號：【🥀 過勞倒地不起】';
+            desc.innerHTML = '小學員暴走、進度落後，你直接累癱在營隊地板上。<br>無法繼續勝任隊輔工作。';
+        }
+        overlay.style.display = 'flex'; logSystem("[系統] 任務失敗。", "damage");
+    }
+
+    function triggerVictory() {
+        isGameOver = true; clearInterval(timerInterval); 
+        dialogBox.style.display = 'none'; dialogBox.classList.remove('crisis-mode');
+        isDialogActive = false; currentDialogNPC = null;
+        
+        const overlay = document.getElementById('ending-overlay');
+        const icon = document.getElementById('ending-icon'); const title = document.getElementById('ending-title'); const desc = document.getElementById('ending-desc');
+        const badge = document.getElementById('ending-badge');
+        
+        finalTimeUsed = Math.max(1, elapsedTime);
+        const result = evaluateEnding(finalTimeUsed);
+        currentTitleTag = result.tag;
+        lastEndingResult = result; 
+
+        addXP(5.0);
+        checkAndUnlockAchievements(true, finalTimeUsed, result.tag, selectedClassKey);
+
+        icon.innerText = result.icon;
+        title.innerText = result.title;
+        title.style.color = result.color;
+        badge.style.display = 'inline-block';
+        badge.innerText = `解鎖稱號：${result.tag}`;
+
+        desc.innerHTML = `🌟 綜合評分：<span style="color:var(--success); font-weight:bold; font-size:18px;">${result.score} 分 [ 級別: ${result.grade} ]</span><br>總計耗時：<span style="color:var(--success); font-weight:bold;">${finalTimeUsed} 秒</span> ｜ 隱藏考核：<span style="color:var(--warning); font-weight:bold;">${currentHiddenScore} 分</span><br><br>${result.desc}`;
+        
+        document.getElementById('score-submit-area').style.display = 'flex';
+        document.getElementById('ending-leaderboard').style.display = 'flex';
+        document.getElementById('restart-btn').style.display = 'block';
+        document.getElementById('player-name-input').value = ''; 
+        
+        overlay.style.display = 'flex'; logSystem("[系統] 任務完成，正在結算成績...", "heal");
+    }
+
+    function updateQuestUI() { 
+        document.getElementById('quest-progress').innerText = `${talkedTo.size}/${QUEST_GOAL}`; 
+        document.getElementById('supply-progress').innerText = `${collectedSupplies}/${SUPPLY_GOAL}`;
+    }
+
+    function restartGame() {
+        stepCount = 0; talkedTo.clear(); collectedSupplies = 0; elapsedTime = 0; 
+        triggeredCrises = 0; usedCrisisIndices.clear();
+        applyClassStats();
+
+        document.getElementById('timer-display').style.color = '#fff';
+        document.getElementById('ending-leaderboard').style.display = 'none';
+        document.getElementById('score-submit-area').style.display = 'none';
+        
+        loadStartLeaderboard();
+        
+        floatingTexts = []; currentScene = 'classroom'; 
+        player.gridX = 7; player.gridY = 5; player.pixelX = 7*TILE_SIZE; player.pixelY = 5*TILE_SIZE; player.facing = 'down';
+        
+        isGameOver = false; isDialogActive = false; currentDialogNPC = null; 
+        dialogBox.style.display = 'none'; dialogBox.classList.remove('crisis-mode');
+        systemChat.innerHTML = ''; logSystem("[系統] 重新連線成功。", "system");
+        
+        for (let s in scenes) { 
+            scenes[s].items?.forEach(i => i.picked = false); 
+            scenes[s].npcs?.forEach(npc => { npc.gridX = npc.startX; npc.gridY = npc.startY; npc.pixelX = npc.startX*TILE_SIZE; npc.pixelY = npc.startY*TILE_SIZE;});
+        }
+        document.getElementById('ending-overlay').style.display = 'none';
+        isGameStarted = false;
+        document.getElementById('start-screen-overlay').style.display = 'flex';
+    }
+
+    function isWalkable(x, y) {
+        if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return false;
+        const scene = scenes[currentScene];
+        for (let obj of scene.objects) if (x >= obj.x && x < obj.x + obj.w && y >= obj.y && y < obj.y + obj.h) return false;
+        for (let npc of scene.npcs) if (x === npc.gridX && y === npc.gridY) return false;
+        return true;
+    }
+
+    function findPath(startX, startY, targetX, targetY, isTargetNPC) {
+        if (isTargetNPC && Math.abs(startX - targetX) + Math.abs(startY - targetY) === 1) return [];
+        let queue = [{ x: startX, y: startY, path: [] }]; let visited = new Set([`${startX},${startY}`]);
+
+        while (queue.length > 0) {
+            let curr = queue.shift();
+            if (isTargetNPC && Math.abs(curr.x - targetX) + Math.abs(curr.y - targetY) === 1) return curr.path;
+            if (!isTargetNPC && curr.x === targetX && curr.y === targetY) return curr.path;
+
+            const neighbors = [{ x: curr.x, y: curr.y - 1, dir: 'up' }, { x: curr.x, y: curr.y + 1, dir: 'down' }, { x: curr.x - 1, y: curr.y, dir: 'left' }, { x: curr.x + 1, y: curr.y, dir: 'right' }];
+            for (let n of neighbors) {
+                let actualX = n.x !== undefined ? n.x : curr.x + n.dx;
+                let actualY = n.y !== undefined ? n.y : curr.y + n.dy;
+                let actualDir = n.dir;
+                if (isWalkable(actualX, actualY) && !visited.has(`${actualX},${actualY}`)) {
+                    visited.add(`${actualX},${actualY}`); 
+                    queue.push({ x: actualX, y: actualY, path: [...curr.path, { x: actualX, y: actualY, dir: actualDir }] });
+                }
             }
         }
-    </script>
+        return null; 
+    }
+
+    let pathQueue = []; let isMoving = false; let finalPathAction = null;
+    function startWalk(path, action) {
+        pathQueue = path; finalPathAction = action; isMoving = true;
+        if (pathQueue.length === 0) { isMoving = false; if (finalPathAction) finalPathAction(); }
+    }
+
+    const choicesContainer = document.getElementById('choices-container');
+    function renderDialog() {
+        let msg = currentDialogNPC.msgs[currentDialogIndex];
+        if (typeof msg === 'string') {
+            document.getElementById('dialog-text').innerText = msg;
+            document.getElementById('dialog-hint').style.display = 'block'; choicesContainer.style.display = 'none';
+            document.getElementById('dialog-hint').innerText = (currentDialogIndex < currentDialogNPC.msgs.length - 1) ? '▼ 點擊繼續' : '▼ 點擊結束';
+        } else {
+            document.getElementById('dialog-text').innerText = msg.question;
+            document.getElementById('dialog-hint').style.display = 'none'; choicesContainer.innerHTML = '';
+            
+            const shuffledChoices = shuffleArray(msg.choices);
+
+            shuffledChoices.forEach(choice => {
+                let btn = document.createElement('div'); btn.className = 'choice-btn'; 
+                let hintTag = (CLASSES[selectedClassKey].showHint && choice.best) ? ' ✨(推薦)' : '';
+                btn.innerText = choice.text + hintTag;
+
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    let moodCost = choice.moodChange;
+                    if (choice.hiddenScore < 0) {
+                        moodCost += CLASSES[selectedClassKey].wrongPenalty;
+                    }
+                    changeMood(moodCost); 
+                    currentHiddenScore += choice.hiddenScore;
+                    if (isGameOver) return;
+                    
+                    let xpGain = choice.best ? 1.0 : 0.5;
+                    addXP(xpGain, player.pixelX + TILE_SIZE/2, player.pixelY);
+
+                    document.getElementById('dialog-text').innerText = choice.reply;
+                    choicesContainer.style.display = 'none'; document.getElementById('dialog-hint').style.display = 'block'; document.getElementById('dialog-hint').innerText = '▼ 點擊結束';
+                    currentDialogIndex = currentDialogNPC.msgs.length; 
+                };
+                choicesContainer.appendChild(btn);
+            });
+            choicesContainer.style.display = 'flex';
+        }
+    }
+
+    function startDialog(npc) {
+        if (isGameOver) return; 
+        dialogBox.classList.remove('crisis-mode');
+        let cost = npc.moodChange !== undefined ? npc.moodChange : -1;
+        changeMood(cost, npc.pixelX, npc.pixelY);
+        if (isGameOver) return;
+
+        if (requiredNPCs.includes(npc.name) && !talkedTo.has(npc.name)) {
+            talkedTo.add(npc.name); updateQuestUI();
+            logSystem(`[任務] 安撫進度 (${talkedTo.size}/${QUEST_GOAL})`, "info");
+        }
+
+        currentDialogNPC = npc; currentDialogIndex = 0; document.getElementById('dialog-name').innerText = npc.name;
+        dialogBox.style.display = 'block'; isDialogActive = true;
+        renderDialog();
+    }
+
+    dialogBox.onclick = (e) => {
+        e.stopPropagation();
+        if (typeof currentDialogNPC.msgs[currentDialogIndex] === 'object') return; 
+        if (currentDialogNPC && currentDialogIndex < currentDialogNPC.msgs.length - 1) {
+            currentDialogIndex++; renderDialog();
+        } else {
+            dialogBox.style.display = 'none'; dialogBox.classList.remove('crisis-mode');
+            isDialogActive = false; currentDialogNPC = null; 
+            checkAllQuestsCompleted();
+        }
+    };
+
+    canvas.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); 
+        if (!isGameStarted || isDialogActive || isGameOver) return; 
+        
+        const rect = canvas.getBoundingClientRect(); 
+        const targetGridX = Math.floor(((e.clientX - rect.left) / rect.width) * COLS); 
+        const targetGridY = Math.floor(((e.clientY - rect.top) / rect.height) * ROWS);
+        const scene = scenes[currentScene];
+
+        let clickedNPC = scene.npcs.find(n => n.gridX === targetGridX && n.gridY === targetGridY);
+        
+        if (clickedNPC) {
+            let path = findPath(player.gridX, player.gridY, clickedNPC.gridX, clickedNPC.gridY, true);
+            if (path !== null) startWalk(path, () => { 
+                let isStillAdjacent = Math.abs(player.gridX - clickedNPC.gridX) + Math.abs(player.gridY - clickedNPC.gridY) === 1;
+                if (isStillAdjacent) {
+                    player.facing = clickedNPC.gridX > player.gridX ? 'right' : clickedNPC.gridX < player.gridX ? 'left' : clickedNPC.gridY > player.gridY ? 'down' : 'up';
+                    startDialog(clickedNPC); 
+                } else {
+                    logSystem(`[提示] 目標已移動，追蹤失敗`, "warning");
+                }
+            });
+        } 
+        else if (targetGridX === scene.portal.x && targetGridY === scene.portal.y) {
+            let path = findPath(player.gridX, player.gridY, targetGridX, targetGridY, true);
+            if (path !== null) startWalk(path, () => { 
+                logSystem(`[系統] 讀取新區域中...`, "info");
+                currentScene = scene.portal.toScene; player.gridX = scene.portal.toX; player.gridY = scene.portal.toY; 
+                player.pixelX = player.gridX * TILE_SIZE; player.pixelY = player.gridY * TILE_SIZE;
+            });
+        }
+        else if (isWalkable(targetGridX, targetGridY)) {
+            let path = findPath(player.gridX, player.gridY, targetGridX, targetGridY, false);
+            if (path !== null) startWalk(path, null);
+        }
+    });
+
+    setInterval(() => {
+        if (!isGameStarted || isDialogActive || isGameOver) return;
+        const scene = scenes[currentScene];
+        
+        for (let npc of scene.npcs) {
+            if (!npc.canMove || Math.random() > 0.6) continue;
+
+            const dirs = [ {dx:0,dy:-1}, {dx:0,dy:1}, {dx:-1,dy:0}, {dx:1,dy:0} ];
+            const dir = dirs[Math.floor(Math.random() * dirs.length)];
+            const nx = npc.gridX + dir.dx; const ny = npc.gridY + dir.dy;
+
+            if (Math.abs(nx - npc.startX) > 3 || Math.abs(ny - npc.startY) > 3) continue;
+            if (nx < 0 || nx >= COLS || ny < 0 || ny >= ROWS) continue;
+            if (nx === player.gridX && ny === player.gridY) continue; 
+            if (nx === scene.portal.x && ny === scene.portal.y) continue; 
+            
+            let collision = false;
+            for (let obj of scene.objects) if (nx >= obj.x && nx < obj.x + obj.w && ny >= obj.y && ny < obj.y + obj.h) collision = true;
+            for (let otherNpc of scene.npcs) if (nx === otherNpc.gridX && ny === otherNpc.gridY) collision = true;
+            
+            if (!collision) {
+                npc.gridX = nx; npc.gridY = ny;
+            }
+        }
+    }, 1200);
+
+    function lerp(start, end, factor) { return start + (end - start) * factor; }
+    
+    function drawNameLabel(title, name, px, py, isPlayer = false, isDone = false) {
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.font = 'bold 11px sans-serif'; ctx.fillStyle = isPlayer ? '#feca57' : '#a4b0be'; ctx.fillText(`[${title}]`, px, py - 18);
+        let displayName = isDone ? `✅${name}` : name;
+        ctx.font = '900 14px "微軟正黑體", sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.9)'; ctx.strokeText(displayName, px, py - 3);
+        ctx.fillStyle = isPlayer ? '#1dd1a1' : (isDone ? '#2ed573' : '#ffffff'); ctx.fillText(displayName, px, py - 3);
+    }
+
+    function drawGraphic(imgKey, icon, px, py, tilesW = 1, tilesH = 1) {
+        if (imgKey && images[imgKey] && images[imgKey].complete && images[imgKey].naturalWidth > 0) {
+            let imgW = tilesW * TILE_SIZE; let imgH = tilesH * TILE_SIZE;
+            ctx.drawImage(images[imgKey], px - imgW/2, py - imgH/2, imgW, imgH);
+        } else {
+            let size = tilesW > 1 ? 70 : 36;
+            ctx.fillStyle = '#000000'; ctx.font = `${size}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(icon, px, py + 2);
+        }
+    }
+
+    function gameLoop(timestamp) {
+        const scene = scenes[currentScene];
+        const cls = CLASSES[selectedClassKey];
+        
+        let currentSpeed = currentMood <= 0 ? cls.speed / 3 : cls.speed;
+        
+        if (isMoving && pathQueue.length > 0) {
+            let targetX = pathQueue[0].x * TILE_SIZE; let targetY = pathQueue[0].y * TILE_SIZE;
+            player.pixelX = lerp(player.pixelX, targetX, currentSpeed); 
+            player.pixelY = lerp(player.pixelY, targetY, currentSpeed);
+            player.facing = pathQueue[0].dir;
+
+            if (Math.abs(player.pixelX - targetX) < 1.5 && Math.abs(player.pixelY - targetY) < 1.5) {
+                player.gridX = pathQueue[0].x; player.gridY = pathQueue[0].y;
+                player.pixelX = targetX; player.pixelY = targetY;
+                pathQueue.shift();
+                
+                let item = scene.items?.find(i => i.x === player.gridX && i.y === player.gridY && !i.picked);
+                if (item) { 
+                    item.picked = true; 
+                    changeMood(item.heal); 
+                    if (item.isSupply) {
+                        collectedSupplies++;
+                        updateQuestUI();
+                        logSystem(`[任務] 尋回物資：${item.name} (${collectedSupplies}/${SUPPLY_GOAL})`, "heal");
+                        addFloatingText(player.pixelX + TILE_SIZE/2, player.pixelY - 20, `尋回 ${item.name}!`, '#4facfe');
+                        checkAllQuestsCompleted();
+                    } else {
+                        logSystem(`[拾取] 獲得 ${item.name}`, "info");
+                    }
+                }
+
+                stepCount++;
+                if (stepCount >= cls.walkStepsCost) { stepCount = 0; changeMood(-1); }
+
+                if (pathQueue.length === 0) { isMoving = false; if (finalPathAction) finalPathAction(); }
+            }
+        }
+
+        for (let npc of scene.npcs) {
+            npc.pixelX = lerp(npc.pixelX, npc.gridX * TILE_SIZE, 0.15); npc.pixelY = lerp(npc.pixelY, npc.gridY * TILE_SIZE, 0.15);
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        for(let r = 0; r < ROWS; r++) {
+            for(let c = 0; c < COLS; c++) {
+                let floorKey = scene.type === 'grass' ? 'floor_grass' : 'floor_wood';
+                if (images[floorKey] && images[floorKey].complete && images[floorKey].naturalWidth > 0) {
+                    ctx.drawImage(images[floorKey], c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                } else {
+                    ctx.fillStyle = scene.type === 'grass' ? textures.grass : textures.wood;
+                    ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                }
+            }
+        }
+
+        drawGraphic(scene.portal.imgKey, scene.portal.icon, scene.portal.x * TILE_SIZE + TILE_SIZE/2, scene.portal.y * TILE_SIZE + TILE_SIZE/2, 1, 1);
+        let breatheOffset = Math.sin(timestamp / 200) * 3; 
+        
+        if (scene.items) {
+            for (let item of scene.items) { 
+                if (!item.picked) {
+                    let ix = item.x * TILE_SIZE + TILE_SIZE/2;
+                    let iy = item.y * TILE_SIZE + TILE_SIZE/2;
+                    if (item.isSupply) {
+                        ctx.fillStyle = 'rgba(255, 165, 2, 0.35)';
+                        ctx.beginPath(); ctx.arc(ix, iy + breatheOffset, 22, 0, Math.PI*2); ctx.fill();
+                    }
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(ix, item.y*TILE_SIZE+40, 10, 5, 0, 0, Math.PI*2); ctx.fill();
+                    drawGraphic(item.imgKey, item.icon, ix, iy + breatheOffset, 1, 1); 
+                }
+            }
+        }
+
+        for (let obj of scene.objects) {
+            let cx = obj.x * TILE_SIZE + (obj.w * TILE_SIZE)/2; let cy = obj.y * TILE_SIZE + (obj.h * TILE_SIZE)/2;
+            drawGraphic(obj.imgKey, obj.icon, cx, cy, obj.w, obj.h);
+        }
+
+        for (let npc of scene.npcs) {
+            let cx = npc.pixelX + TILE_SIZE/2; let cy = npc.pixelY + TILE_SIZE/2;
+            ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(cx, cy + 15, 14, 6, 0, 0, Math.PI*2); ctx.fill(); 
+            drawGraphic(npc.imgKey, npc.icon, cx, cy + breatheOffset, 1, 1); 
+            drawNameLabel(npc.title, npc.name, cx, cy, false, talkedTo.has(npc.name)); 
+        }
+
+        let px = player.pixelX + TILE_SIZE/2; let py = player.pixelY + TILE_SIZE/2;
+        ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(px, py + 15, 14, 6, 0, 0, Math.PI*2); ctx.fill();
+        drawGraphic(player.imgKey, player.icon, px, py + breatheOffset, 1, 1);
+        drawNameLabel(cls.titlePrefix, "隊輔", px, py, true); 
+
+        ctx.fillStyle = "rgba(79, 172, 254, 0.8)"; ctx.beginPath();
+        if(player.facing === 'up') { ctx.moveTo(px, py-26); ctx.lineTo(px-6, py-18); ctx.lineTo(px+6, py-18); }
+        if(player.facing === 'down') { ctx.moveTo(px, py+26); ctx.lineTo(px-6, py+18); ctx.lineTo(px+6, py+18); }
+        if(player.facing === 'left') { ctx.moveTo(px-26, py); ctx.lineTo(px-18, py-6); ctx.lineTo(px-18, py+6); }
+        if(player.facing === 'right') { ctx.moveTo(px+26, py); ctx.lineTo(px+18, py-6); ctx.lineTo(px+18, py+6); }
+        ctx.fill();
+
+        let gradient = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 200, canvas.width/2, canvas.height/2, canvas.width/1.2);
+        gradient.addColorStop(0, 'rgba(0,0,0,0)'); gradient.addColorStop(1, 'rgba(0,0,0,0.7)'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = floatingTexts.length - 1; i >= 0; i--) {
+            let ft = floatingTexts[i];
+            ft.y -= 0.6; ft.life -= 0.02; 
+            if (ft.life <= 0) { floatingTexts.splice(i, 1); continue; }
+            ctx.font = '900 22px "微軟正黑體", sans-serif'; ctx.textAlign = 'center';
+            ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 4; ctx.globalAlpha = ft.life; 
+            ctx.strokeText(ft.text, ft.x, ft.y); ctx.fillStyle = ft.color; ctx.fillText(ft.text, ft.x, ft.y); ctx.globalAlpha = 1.0;
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    applySelectedSkin();
+    applyClassStats();
+    updateMoodUI();
+    requestAnimationFrame(gameLoop);
+</script>
 </body>
 </html>
