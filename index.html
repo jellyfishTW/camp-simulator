@@ -77,7 +77,6 @@
             font-size: 0.9rem;
         }
 
-        /* 確保下拉選單展開時，選項有深色背景，不會與飛船背景糊在一起 */
         select option {
             background-color: #0f172a; 
             color: #67e8f9;
@@ -122,6 +121,46 @@
             50% { border-color: #22c55e; }
         }
 
+        /* 圖片下拉選單專屬樣式 */
+        .custom-dropdown {
+            position: relative;
+            cursor: pointer;
+        }
+        .dropdown-options {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #0f172a;
+            border: 1px solid rgba(6, 182, 212, 0.6);
+            z-index: 50;
+            max-height: 250px;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+        }
+        .dropdown-options.show {
+            display: block;
+        }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(6, 182, 212, 0.15);
+            transition: background 0.2s;
+        }
+        .dropdown-item:hover {
+            background: rgba(8, 145, 178, 0.3);
+        }
+        .dropdown-item img {
+            width: 32px;
+            height: 32px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 10px;
+            border: 1px solid #06b6d4;
+        }
+
         /* Status LEDs */
         .led {
             width: 10px;
@@ -152,7 +191,7 @@
 <body class="p-4 sm:p-8">
 
     <!-- 頂部狀態列 -->
-    <div class="w-full max-w-6xl flex justify-between items-center mb-8 px-4 border-b border-cyan-800 pb-2">
+    <div class="web-header w-full max-w-6xl flex justify-between items-center mb-8 px-4 border-b border-cyan-800 pb-2">
         <div class="flex items-center space-x-4">
             <span class="font-bold text-cyan-500 tracking-wider">SYS_ID: 5107</span>
             <div class="flex space-x-2">
@@ -189,16 +228,38 @@
         <!-- 輸入區域 (水平排列) -->
         <div class="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             
-            <!-- Input 01：修復部位圖形 (下拉選單) -->
-            <div class="flex flex-col">
-                <label class="text-xs text-cyan-500 mb-1 ml-1 tracking-widest uppercase">Input 01</label>
-                <select id="input1" class="input-scifi w-full p-3 rounded-sm text-center font-bold tracking-wider cursor-pointer">
-                    <option value="" disabled selected>-- 選擇修復部位 --</option>
-                    <option value="第一隻外星人的角">第一隻外星人的角</option>
-                    <option value="第二隻外星人的角">第二隻外星人的角</option>
-                    <option value="第三隻外星人的角">第三隻外星人的角</option> <!-- 正確答案 -->
-                    <option value="第四隻外星人的角">第四隻外星人的角</option>
-                </select>
+            <!-- Input 01：修復部位圖形 (自製圖片下拉選單) -->
+            <div class="flex flex-col relative">
+                <label class="text-xs text-cyan-500 mb-1 ml-1 tracking-widest uppercase">Input 01 (修復部位圖形)</label>
+                
+                <!-- 點擊展開的觸發按鈕 -->
+                <div id="customSelectBtn" class="custom-dropdown input-scifi w-full p-3 rounded-sm text-center font-bold tracking-wider flex items-center justify-between" onclick="toggleDropdown()">
+                    <span id="selectedText">-- 選擇修復部位圖形 --</span>
+                    <span class="text-cyan-400 text-xs">▼</span>
+                </div>
+
+                <!-- 下拉選項清單 (您可以在此替換 src="您的圖片網址或檔案路徑") -->
+                <div id="dropdownOptions" class="dropdown-options rounded-sm">
+                    <div class="dropdown-item" onclick="selectOption('第一隻外星人的角', 'https://picsum.photos/id/10/50/50')">
+                        <img src="https://picsum.photos/id/10/50/50" alt="選項1">
+                        <span class="text-cyan-300 text-sm font-bold">第一隻外星人的角</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectOption('第二隻外星人的角', 'https://picsum.photos/id/20/50/50')">
+                        <img src="https://picsum.photos/id/20/50/50" alt="選項2">
+                        <span class="text-cyan-300 text-sm font-bold">第二隻外星人的角</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectOption('第三隻外星人的角', 'https://picsum.photos/id/30/50/50')">
+                        <img src="https://picsum.photos/id/30/50/50" alt="選項3">
+                        <span class="text-cyan-300 text-sm font-bold">第三隻外星人的角 (正確答案)</span>
+                    </div>
+                    <div class="dropdown-item" onclick="selectOption('第四隻外星人的角', 'https://picsum.photos/id/40/50/50')">
+                        <img src="https://picsum.photos/id/40/50/50" alt="選項4">
+                        <span class="text-cyan-300 text-sm font-bold">第四隻外星人的角</span>
+                    </div>
+                </div>
+
+                <!-- 隱藏的 input 用於給 JS 驗證讀取 -->
+                <input type="hidden" id="input1" value="">
             </div>
 
             <!-- Input 02：最大能源線路顏色 (下拉選單) -->
@@ -243,6 +304,97 @@
 
     <script>
         // ==========================================
+        // 圖片下拉選單互動控制
+        // ==========================================
+        function toggleDropdown() {
+            const options = document.getElementById('dropdownOptions');
+            options.classList.toggle('show');
+        }
+
+        function selectOption(value, imgSrc) {
+            // 設定隱藏 input 的值供驗證用
+            document.getElementById('input1').value = value;
+            
+            // 更新按鈕顯示的文字與小圖片
+            const btnText = document.getElementById('selectedText');
+            btnText.innerHTML = `<div class="flex items-center"><img src="${imgSrc}" style="width:24px; height:24px; margin-right:8px; border-radius:2px;"><span>${value}</span></div>`;
+            
+            // 關閉下拉選單
+            document.getElementById('dropdownOptions').classList.remove('show');
+        }
+
+        // 點擊畫面其他地方時關閉下拉選單
+        window.addEventListener('click', function(e) {
+            if (!document.getElementById('customSelectBtn').contains(e.target) && !document.getElementById('dropdownOptions').contains(e.target)) {
+                document.getElementById('dropdownOptions').classList.remove('show');
+            }
+        });
+
+        // ==========================================
+        // 音效系統 (使用瀏覽器內建 Web Audio API 發出科幻音效)
+        // ==========================================
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // 播放成功音效 (高亢且愉快的雙音階登入成功聲)
+        function playSuccessSound() {
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+                
+                const osc1 = audioCtx.createOscillator();
+                const gain1 = audioCtx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(523.25, now); // C5
+                osc1.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                osc1.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                osc1.frequency.setValueAtTime(1046.50, now + 0.3); // C6
+
+                gain1.gain.setValueAtTime(0.2, now);
+                gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+                osc1.connect(gain1);
+                gain1.connect(audioCtx.destination);
+
+                osc1.start(now);
+                osc1.stop(now + 0.6);
+            } catch (e) {
+                console.log("Audio not supported or blocked", e);
+            }
+        }
+
+        // 播放錯誤音效 (低沉急促的警報嗶嗶聲)
+        function playErrorSound() {
+            try {
+                initAudio();
+                const now = audioCtx.currentTime;
+
+                for (let i = 0; i < 2; i++) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now + (i * 0.15));
+                    
+                    gain.gain.setValueAtTime(0.25, now + (i * 0.15));
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + (i * 0.15) + 0.12);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start(now + (i * 0.15));
+                    osc.stop(now + (i * 0.15) + 0.12);
+                }
+            } catch (e) {
+                console.log("Audio not supported or blocked", e);
+            }
+        }
+
+        // ==========================================
         // 動態訊息系統設定
         // ==========================================
         const messages = [
@@ -266,7 +418,6 @@
             currentMsgIndex = (currentMsgIndex + 1) % messages.length;
         }
 
-        // 頁面載入後立即顯示第一條，並每隔 5 秒自動切換下一條動態訊息
         rotateTerminalMessage();
         setInterval(rotateTerminalMessage, 5000);
 
@@ -281,7 +432,7 @@
             
             const messageContainer = document.getElementById('message-container');
             
-            // 正確答案 (可在此自行修改)
+            // 正確答案設定
             const ans1 = '第三隻外星人的角';
             const ans2 = '黃色';
             const ans3 = '2026';
@@ -290,6 +441,9 @@
             messageContainer.classList.remove('hidden');
 
             if (val1 === ans1 && val2 === ans2 && val3 === ans3 && val4 === ans4) {
+                // 播放成功音效
+                playSuccessSound();
+
                 // 成功狀態
                 messageContainer.innerHTML = `
                     <div class="message-box bg-green-900/40 border border-green-400 p-6 text-center shadow-[0_0_20px_rgba(34,197,94,0.6)] animate-pulse relative overflow-hidden">
@@ -301,6 +455,9 @@
                 document.querySelector('.panel-container').style.boxShadow = "0 0 50px rgba(34, 197, 94, 0.4), inset 0 0 30px rgba(34, 197, 94, 0.2)";
                 document.querySelector('.panel-container').style.borderColor = "rgba(34, 197, 94, 0.6)";
             } else {
+                // 播放錯誤警報音效
+                playErrorSound();
+
                 // 失敗/警告狀態
                 messageContainer.innerHTML = `
                     <div class="message-box bg-red-900/40 border border-red-500 p-6 text-center shadow-[0_0_20px_rgba(239,68,68,0.6)] relative overflow-hidden">
